@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Spread Pool</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#0a1f14; --felt2:#0e2a1b; --line:#1d4230;
+  --paper:#f4eddc; --paper2:#efe5cd; --ink:#20241f; --ink2:#6b6a5c;
+  --gold:#d9a441; --gold2:#b8862e;
+  --red:#c0392b; --win:#2e7d4f; --push:#8a7f4e;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Barlow',sans-serif;color:var(--paper);background:var(--felt);
+  background-image:
+    radial-gradient(1200px 500px at 50% -10%, rgba(217,164,65,.10), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 6px);
+  min-height:100vh;padding-bottom:90px;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+/* ---------- header ---------- */
+header{padding:18px 0 10px;text-align:center}
+.wordmark{font-family:'Big Shoulders Display';font-weight:800;font-size:clamp(34px,9vw,52px);
+  letter-spacing:.04em;line-height:.9;color:var(--paper);text-transform:uppercase}
+.wordmark span{color:var(--gold)}
+.tagline{font-family:'Spline Sans Mono';font-size:11px;letter-spacing:.32em;color:var(--gold);
+  text-transform:uppercase;margin-top:6px;opacity:.85}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:14px auto 0;max-width:420px;opacity:.5}
+
+/* ---------- login ---------- */
+.login-card{background:var(--paper);color:var(--ink);border-radius:6px;margin:26px auto;max-width:420px;
+  padding:26px 22px 22px;box-shadow:var(--shadow);position:relative}
+.login-card:before,.login-card:after{content:"";position:absolute;left:0;right:0;height:8px;
+  background-image:radial-gradient(circle at 6px 4px, var(--felt) 4px, transparent 4.5px);background-size:16px 8px}
+.login-card:before{top:-4px}.login-card:after{bottom:-4px;transform:scaleY(-1)}
+.login-card h2{font-family:'Big Shoulders Display';font-weight:800;font-size:26px;text-transform:uppercase;letter-spacing:.03em}
+.login-card p{font-size:13.5px;color:var(--ink2);margin:6px 0 16px;line-height:1.45}
+label{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink2);margin:12px 0 5px}
+input,select{width:100%;font-family:'Barlow';font-size:16px;font-weight:600;color:var(--ink);
+  background:#fff;border:1.5px solid #cfc4a6;border-radius:4px;padding:11px 12px;outline:none}
+input:focus,select:focus{border-color:var(--gold2)}
+.btn{display:inline-block;width:100%;margin-top:18px;font-family:'Big Shoulders Display';font-weight:800;
+  font-size:19px;letter-spacing:.08em;text-transform:uppercase;color:var(--felt);
+  background:linear-gradient(180deg,var(--gold),var(--gold2));border:none;border-radius:4px;
+  padding:13px;cursor:pointer;transition:transform .08s}
+.btn:active{transform:scale(.98)}
+.btn.small{width:auto;font-size:15px;padding:9px 16px;margin-top:0}
+.btn.ghost{background:transparent;color:var(--gold);border:1.5px solid var(--gold2)}
+.btn.danger{background:linear-gradient(180deg,#d05545,#a63527);color:#fff}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+/* ---------- tabs ---------- */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:rgba(8,22,14,.96);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
+nav button{flex:1;max-width:150px;background:none;border:none;color:#87a794;cursor:pointer;
+  font-family:'Big Shoulders Display';font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;padding:10px 4px;border-radius:6px}
+nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),var(--gold2))}
+
+/* ---------- week bar ---------- */
+.weekbar{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+.weekbar select{flex:1;background:var(--felt2);color:var(--paper);border:1px solid var(--line);font-weight:700}
+.userchip{font-family:'Spline Sans Mono';font-size:11px;color:var(--gold);letter-spacing:.08em;white-space:nowrap;cursor:pointer}
+
+/* ---------- countdown strips ---------- */
+.lockstrip{display:flex;justify-content:space-between;align-items:center;background:var(--felt2);
+  border:1px solid var(--line);border-radius:6px;padding:9px 13px;margin:10px 0}
+.lockstrip .lg{font-family:'Big Shoulders Display';font-weight:800;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.lockstrip .cd{font-family:'Spline Sans Mono';font-weight:700;font-size:15px;color:var(--gold)}
+.lockstrip.closed .cd{color:var(--red)}
+.lockstrip .sub{font-size:11px;color:#87a794;display:block;font-family:'Barlow';letter-spacing:0}
+
+/* ---------- section heads ---------- */
+.sechead{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 8px}
+.sechead h3{font-family:'Big Shoulders Display';font-weight:800;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
+.sechead .count{font-family:'Spline Sans Mono';font-size:13px;font-weight:700;color:var(--gold)}
+.sechead .count.full{color:var(--win);filter:brightness(1.6)}
+
+/* ---------- game tickets ---------- */
+.ticket{background:var(--paper);color:var(--ink);border-radius:5px;margin:10px 0;box-shadow:0 4px 14px rgba(0,0,0,.35);
+  position:relative;overflow:hidden}
+.ticket .meta{display:flex;justify-content:space-between;font-family:'Spline Sans Mono';font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);padding:8px 12px 0}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:8px 10px 12px}
+.side{border:1.5px solid #d8ccab;background:#fbf7ec;padding:10px 10px 9px;cursor:pointer;position:relative;transition:all .12s}
+.side:first-child{border-radius:4px 0 0 4px;border-right-width:.75px}
+.side:last-child{border-radius:0 4px 4px 0;border-left-width:.75px}
+.side .tm{font-weight:700;font-size:14.5px;line-height:1.15}
+.side .sp{font-family:'Spline Sans Mono';font-weight:700;font-size:17px;margin-top:3px;color:var(--ink)}
+.side .sp.fav{color:var(--red)}
+.side.mine{background:var(--felt2);border-color:var(--gold2);}
+.side.mine .tm{color:var(--paper)}
+.side.mine .sp{color:var(--gold)}
+.side.mine:after{content:"YOUR PICK";position:absolute;top:4px;right:6px;font-family:'Spline Sans Mono';font-size:8px;letter-spacing:.14em;color:var(--gold)}
+.side.dead{cursor:default;opacity:.75}
+.ticket.locked .side{cursor:default}
+.score{font-family:'Spline Sans Mono';font-weight:700;font-size:13px;color:var(--ink2);padding:0 12px 9px}
+.score b{color:var(--ink)}
+
+/* rubber stamps */
+.stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-11deg);
+  font-family:'Big Shoulders Display';font-weight:800;font-size:26px;letter-spacing:.14em;
+  padding:2px 12px;border:3px solid;border-radius:4px;opacity:.9;pointer-events:none;mix-blend-mode:multiply}
+.stamp.win{color:var(--win);border-color:var(--win)}
+.stamp.loss{color:var(--red);border-color:var(--red)}
+.stamp.push{color:var(--push);border-color:var(--push)}
+
+/* ---------- board ---------- */
+.playerblock{background:var(--felt2);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:10px 0}
+.playerblock h4{font-family:'Big Shoulders Display';font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline}
+.playerblock h4 .rec{font-family:'Spline Sans Mono';font-size:12px;color:var(--gold)}
+.pickrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed rgba(244,237,220,.12);font-size:14px}
+.pickrow:last-child{border-bottom:none}
+.pickrow .lg{font-family:'Spline Sans Mono';font-size:9px;letter-spacing:.16em;color:#87a794;width:30px}
+.pickrow .who{flex:1;font-weight:600}
+.pickrow .num{font-family:'Spline Sans Mono';font-weight:700;font-size:13px;color:var(--gold);margin-left:8px}
+.pickrow .res{font-family:'Spline Sans Mono';font-weight:700;font-size:11px;letter-spacing:.1em;margin-left:10px;padding:2px 7px;border-radius:3px}
+.res.win{background:var(--win);color:#eafff2}.res.loss{background:var(--red);color:#ffecec}
+.res.push{background:var(--push);color:#fffbe0}.res.tbd{background:#22483385;color:#87a794}
+.hiddennote{font-size:12.5px;color:#87a794;font-style:italic;padding:6px 0}
+
+/* ---------- standings ---------- */
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#87a794;text-align:left;padding:8px 8px;border-bottom:1px solid var(--line)}
+td{padding:11px 8px;border-bottom:1px solid rgba(29,66,48,.6);font-size:15px}
+td.rank{font-family:'Big Shoulders Display';font-weight:800;font-size:20px;color:var(--gold);width:34px}
+td.nm{font-weight:700}
+td.mono,th.r{font-family:'Spline Sans Mono';font-weight:700}
+th.r,td.r{text-align:right}
+tr.me td{background:rgba(217,164,65,.07)}
+
+/* ---------- admin ---------- */
+.adm{background:var(--felt2);border:1px solid var(--line);border-radius:6px;padding:16px;margin:12px 0}
+.adm h4{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;color:var(--gold)}
+.adm p.hint{font-size:12.5px;color:#87a794;margin-bottom:10px;line-height:1.4}
+.adm input,.adm select{background:#0a1c12;color:var(--paper);border-color:var(--line)}
+.adm label{color:#87a794}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pillrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(244,237,220,.12);font-size:14px}
+.pillrow .a{display:flex;gap:6px}
+.pillrow button{background:none;border:1px solid var(--line);color:#87a794;border-radius:4px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:'Spline Sans Mono'}
+.quota{font-family:'Spline Sans Mono';font-size:11px;color:#87a794;margin-top:8px}
+
+/* ---------- toast / misc ---------- */
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--paper);color:var(--ink);
+  font-weight:600;font-size:14px;padding:11px 18px;border-radius:6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:all .25s;z-index:60;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:var(--red);color:#fff}
+.empty{text-align:center;color:#87a794;padding:34px 10px;font-size:14.5px;line-height:1.5}
+.empty .big{font-family:'Big Shoulders Display';font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:var(--paper);display:block;margin-bottom:6px}
+.fade{animation:fadeup .35s ease both}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">The <span>Spread</span> Pool</div>
+    <div class="tagline">Six picks · Two leagues · No excuses</div>
+    <div class="rule"></div>
+  </header>
+
+  <div id="view-login" class="hide">
+    <div class="login-card fade">
+      <h2>Ticket Window</h2>
+      <p>Sign in with your name. First time here? The PIN you enter becomes yours — don't forget it.</p>
+      <label>Name</label>
+      <input id="li-name" autocomplete="username" placeholder="e.g. Alex">
+      <label>PIN (4+ digits)</label>
+      <input id="li-pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••">
+      <button class="btn" id="li-go">Step up to the window</button>
+    </div>
+  </div>
+
+  <div id="view-app" class="hide">
+    <div class="weekbar">
+      <select id="weeksel"></select>
+      <span class="userchip" id="userchip" title="Sign out"></span>
+    </div>
+    <div id="tab-picks"></div>
+    <div id="tab-board" class="hide"></div>
+    <div id="tab-standings" class="hide"></div>
+    <div id="tab-admin" class="hide"></div>
+  </div>
+</div>
+
+<nav id="nav" class="hide">
+  <button data-tab="picks" class="on">Picks</button>
+  <button data-tab="board">The Board</button>
+  <button data-tab="standings">Standings</button>
+  <button data-tab="admin" id="nav-admin" class="hide">Admin</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var BASE = 'https://ufdfznoerzesjpkagsbt.supabase.co/functions/v1/spreadpool';
+var S = { token: localStorage.getItem('sp_token') || '', data: null, tab: 'picks', weekId: null, clockSkew: 0 };
+
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function toast(msg, bad){ var t = el('toast'); t.textContent = msg; t.className = bad ? 'show bad' : 'show';
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.className=''; }, 2600); }
+function now(){ return Date.now() + S.clockSkew; }
+
+function api(path, body){
+  var opts = { method: body ? 'POST' : 'GET', headers: {} };
+  if (S.token) opts.headers['Authorization'] = 'Bearer ' + S.token;
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  return fetch(BASE + path, opts).then(function(r){
+    return r.json().then(function(j){ if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; });
+  });
+}
+
+function fmtSpread(v){
+  if (v === null || v === undefined) return 'PK';
+  var n = Number(v);
+  if (n === 0) return 'PK';
+  return (n > 0 ? '+' : '') + (n % 1 === 0 ? n : n.toFixed(1));
+}
+function fmtTime(iso){
+  return new Intl.DateTimeFormat(undefined, { weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
+}
+function fmtCountdown(ms){
+  if (ms <= 0) return 'LOCKED';
+  var s = Math.floor(ms/1000), d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), sec = s%60;
+  if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
+  if (h > 0) return h + 'h ' + m + 'm ' + ('0'+sec).slice(-2) + 's';
+  return m + 'm ' + ('0'+sec).slice(-2) + 's';
+}
+function leagueLocked(week, lg){
+  var lock = lg === 'cfb' ? week.cfb_lock : week.nfl_lock;
+  return !!lock && new Date(lock).getTime() <= now();
+}
+function toIso(dtLocal){ return dtLocal ? new Date(dtLocal).toISOString() : null; }
+function toLocalInput(iso){
+  if (!iso) return '';
+  var d = new Date(iso);
+  var p = function(n){ return ('0'+n).slice(-2); };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// ---------- data ----------
+function load(){
+  var q = S.weekId ? ('?week_id=' + S.weekId) : '';
+  return api('/api/bootstrap' + q).then(function(d){
+    S.data = d;
+    S.clockSkew = new Date(d.now).getTime() - Date.now();
+    if (d.week) S.weekId = d.week.id;
+    render();
+  }).catch(function(e){
+    if (String(e.message).indexOf('Not signed in') >= 0) { S.token=''; localStorage.removeItem('sp_token'); render(); }
+    else toast(e.message, true);
+  });
+}
+
+// ---------- render ----------
+function render(){
+  var authed = !!(S.token && S.data);
+  el('view-login').classList.toggle('hide', authed);
+  el('view-app').classList.toggle('hide', !authed);
+  el('nav').classList.toggle('hide', !authed);
+  if (!authed) return;
+  var d = S.data;
+  el('nav-admin').classList.toggle('hide', !d.me.is_commissioner);
+  el('userchip').textContent = d.me.name + ' ↩';
+  renderWeekSel();
+  ['picks','board','standings','admin'].forEach(function(t){
+    el('tab-' + t).classList.toggle('hide', S.tab !== t);
+  });
+  if (S.tab === 'picks') renderPicks();
+  if (S.tab === 'board') renderBoard();
+  if (S.tab === 'standings') renderStandings();
+  if (S.tab === 'admin') renderAdmin();
+}
+
+function renderWeekSel(){
+  var d = S.data, sel = el('weeksel'), html = '';
+  if (!d.weeks.length) { sel.innerHTML = '<option>No weeks yet</option>'; return; }
+  d.weeks.forEach(function(w){
+    html += '<option value="' + w.id + '"' + (d.week && w.id === d.week.id ? ' selected' : '') + '>'
+      + esc(w.label || ('Week ' + w.week_no)) + ' · ' + w.season + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function myPicksFor(lg){
+  var d = S.data;
+  return d.picks.filter(function(p){
+    if (p.player_id !== d.me.id) return false;
+    var g = gameById(p.game_id); return g && g.league === lg;
+  });
+}
+function gameById(id){ return S.data.games.find(function(g){ return g.id === id; }); }
+function pickFor(gameId, playerId){
+  return S.data.picks.find(function(p){ return p.game_id === gameId && p.player_id === playerId; });
+}
+
+function lockStrip(week, lg, label){
+  var lock = lg === 'cfb' ? week.cfb_lock : week.nfl_lock;
+  if (!lock) return '';
+  var closed = leagueLocked(week, lg);
+  return '<div class="lockstrip' + (closed ? ' closed' : '') + '">'
+    + '<div class="lg">' + label + '<span class="sub">locks ' + esc(fmtTime(lock)) + '</span></div>'
+    + '<div class="cd" data-deadline="' + esc(lock) + '">' + fmtCountdown(new Date(lock).getTime() - now()) + '</div></div>';
+}
+
+function renderPicks(){
+  var d = S.data, w = d.week, root = el('tab-picks');
+  if (!w) { root.innerHTML = '<div class="empty"><span class="big">No week is set up yet</span>' + (d.me.is_commissioner ? 'Head to Admin to create Week 1.' : 'The commissioner hasn’t opened a week yet.') + '</div>'; return; }
+  var html = '';
+  [['cfb','College','cfb_required'],['nfl','NFL','nfl_required']].forEach(function(cfg){
+    var lg = cfg[0], label = cfg[1], required = w[cfg[2]];
+    if (required <= 0) return;
+    var games = d.games.filter(function(g){ return g.league === lg; });
+    var mine = myPicksFor(lg);
+    var full = mine.length >= required;
+    html += '<div class="sechead"><h3>' + label + '</h3><span class="count' + (full ? ' full' : '') + '">' + mine.length + '/' + required + ' picked</span></div>';
+    html += lockStrip(w, lg, label);
+    if (!games.length) {
+      html += '<div class="empty">No ' + label + ' games loaded yet' + (d.me.is_commissioner ? ' — load them from Admin.' : '.') + '</div>';
+      return;
+    }
+    var locked = leagueLocked(w, lg);
+    games.forEach(function(g){
+      var started = new Date(g.commence_time).getTime() <= now();
+      var frozen = locked || started;
+      var mp = pickFor(g.id, d.me.id);
+      var sp = Number(g.spread_home);
+      var homeSp = fmtSpread(g.spread_home), awaySp = fmtSpread(g.spread_home === null ? null : -sp);
+      html += '<div class="ticket' + (frozen ? ' locked' : '') + '" >'
+        + '<div class="meta"><span>' + esc(fmtTime(g.commence_time)) + '</span><span>' + esc((g.bookmaker || '').toUpperCase()) + ' LINE</span></div>'
+        + '<div class="sides">'
+        + sideBtn(g, 'away', g.away_team, awaySp, sp > 0, mp, frozen)
+        + sideBtn(g, 'home', g.home_team, homeSp, sp < 0, mp, frozen)
+        + '</div>';
+      if (g.completed) html += '<div class="score">FINAL: <b>' + esc(g.away_team) + ' ' + g.away_score + '</b> — <b>' + esc(g.home_team) + ' ' + g.home_score + '</b></div>';
+      html += '</div>';
+    });
+  });
+  if (w.cfb_required <= 0 && w.nfl_required <= 0) html = '<div class="empty"><span class="big">Bye week</span>Nothing required this week.</div>';
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+
+  root.querySelectorAll('.side[data-g]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var gid = b.getAttribute('data-g'), side = b.getAttribute('data-s');
+      var mp = pickFor(gid, S.data.me.id);
+      var call = (mp && mp.side === side) ? api('/api/unpick', { game_id: gid }) : api('/api/pick', { game_id: gid, side: side });
+      call.then(function(){ return load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+}
+
+function sideBtn(g, side, team, spread, isFav, myPick, frozen){
+  var mine = myPick && myPick.side === side;
+  var cls = 'side' + (mine ? ' mine' : '') + (frozen ? ' dead' : '');
+  var stamp = '';
+  if (mine && myPick.result) stamp = '<div class="stamp ' + myPick.result + '">' + myPick.result.toUpperCase() + '</div>';
+  var lockedSp = mine && myPick.spread_home_at_pick !== null && myPick.spread_home_at_pick !== undefined
+    ? fmtSpread(side === 'home' ? myPick.spread_home_at_pick : -Number(myPick.spread_home_at_pick)) : spread;
+  return '<div class="' + cls + '"' + (frozen ? '' : ' data-g="' + g.id + '" data-s="' + side + '"') + '>'
+    + '<div class="tm">' + esc(team) + '</div>'
+    + '<div class="sp' + (isFav ? ' fav' : '') + '">' + (mine ? lockedSp : spread) + '</div>' + stamp + '</div>';
+}
+
+function renderBoard(){
+  var d = S.data, w = d.week, root = el('tab-board');
+  if (!w) { root.innerHTML = '<div class="empty"><span class="big">Nothing on the board</span></div>'; return; }
+  var html = '<div class="sechead"><h3>' + esc(w.label || ('Week ' + w.week_no)) + ' Board</h3></div>';
+  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks appear once that league locks (or a game kicks off).</p>';
+  d.players.forEach(function(pl){
+    var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
+    var wn = 0, ln = 0, pn = 0;
+    picks.forEach(function(p){ if (p.result === 'win') wn++; else if (p.result === 'loss') ln++; else if (p.result === 'push') pn++; });
+    html += '<div class="playerblock"><h4>' + esc(pl.name) + '<span class="rec">' + wn + '-' + ln + (pn ? '-' + pn : '') + '</span></h4>';
+    var rows = '';
+    picks.sort(function(a,b){
+      var ga = gameById(a.game_id), gb = gameById(b.game_id);
+      return (ga.league > gb.league ? 1 : ga.league < gb.league ? -1 : 0) || new Date(ga.commence_time) - new Date(gb.commence_time);
+    }).forEach(function(p){
+      var g = gameById(p.game_id); if (!g) return;
+      var team = p.side === 'home' ? g.home_team : g.away_team;
+      var spH = p.spread_home_at_pick !== null && p.spread_home_at_pick !== undefined ? p.spread_home_at_pick : g.spread_home;
+      var spread = fmtSpread(p.side === 'home' ? spH : (spH === null ? null : -Number(spH)));
+      var res = p.result ? '<span class="res ' + p.result + '">' + p.result.toUpperCase() + '</span>' : '<span class="res tbd">TBD</span>';
+      rows += '<div class="pickrow"><span class="lg">' + g.league.toUpperCase() + '</span><span class="who">' + esc(team) + '</span><span class="num">' + spread + '</span>' + res + '</div>';
+    });
+    var hid = d.hiddenCounts && d.hiddenCounts[pl.id];
+    if (hid) {
+      var parts = [];
+      if (hid.cfb) parts.push(hid.cfb + ' college');
+      if (hid.nfl) parts.push(hid.nfl + ' NFL');
+      rows += '<div class="hiddennote">' + parts.join(' + ') + ' pick' + ((hid.cfb||0)+(hid.nfl||0) > 1 ? 's' : '') + ' in — hidden until lock 🔒</div>';
+    }
+    if (!rows) rows = '<div class="hiddennote">No picks in yet.</div>';
+    html += rows + '</div>';
+  });
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+}
+
+function renderStandings(){
+  var d = S.data, root = el('tab-standings');
+  var html = '<div class="sechead"><h3>Season Standings</h3></div>';
+  if (!d.standings.length || d.standings.every(function(s){ return s.wins + s.losses + s.pushes === 0; })) {
+    html += '<div class="empty"><span class="big">Clean slate</span>Standings appear once picks get graded.</div>';
+  } else {
+    html += '<table><tr><th></th><th>Player</th><th class="r">W</th><th class="r">L</th><th class="r">P</th><th class="r">Win %</th></tr>';
+    d.standings.forEach(function(s, i){
+      var tot = s.wins + s.losses;
+      var pct = tot ? Math.round(1000 * s.wins / tot) / 10 : 0;
+      html += '<tr' + (s.player_id === d.me.id ? ' class="me"' : '') + '><td class="rank">' + (i+1) + '</td><td class="nm">' + esc(s.name) + '</td>'
+        + '<td class="r mono">' + s.wins + '</td><td class="r mono">' + s.losses + '</td><td class="r mono">' + s.pushes + '</td>'
+        + '<td class="r mono">' + (tot ? pct + '%' : '—') + '</td></tr>';
+    });
+    html += '</table>';
+  }
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+}
+
+function renderAdmin(){
+  var d = S.data, root = el('tab-admin'), w = d.week;
+  var html = '';
+
+  html += '<div class="adm"><h4>This Week</h4>';
+  if (w) {
+    html += '<p class="hint">Edit ' + esc(w.label || ('Week ' + w.week_no)) + '. Set required picks to 0 for a league that isn’t playing (early season, bowl season, playoffs).</p>'
+      + '<label>Label</label><input id="aw-label" value="' + esc(w.label || '') + '">'
+      + '<div class="grid2"><div><label>College lock</label><input id="aw-cfb" type="datetime-local" value="' + toLocalInput(w.cfb_lock) + '"></div>'
+      + '<div><label>NFL lock</label><input id="aw-nfl" type="datetime-local" value="' + toLocalInput(w.nfl_lock) + '"></div></div>'
+      + '<div class="grid2"><div><label>College picks required</label><input id="aw-cfbn" type="number" min="0" max="10" value="' + w.cfb_required + '"></div>'
+      + '<div><label>NFL picks required</label><input id="aw-nfln" type="number" min="0" max="10" value="' + w.nfl_required + '"></div></div>'
+      + '<div class="btnrow"><button class="btn small" id="aw-save">Save week</button>'
+      + '<button class="btn small ghost" id="aw-load">Load / refresh spreads</button>'
+      + '<button class="btn small danger" id="aw-del">Delete week</button></div>';
+  } else {
+    html += '<p class="hint">No week selected — create one below.</p>';
+  }
+  html += '</div>';
+
+  html += '<div class="adm"><h4>New Week</h4><p class="hint">Locks default to your local time. Games are pulled for the surrounding window automatically.</p>'
+    + '<div class="grid2"><div><label>Season</label><input id="nw-season" type="number" value="' + (w ? w.season : new Date().getFullYear()) + '"></div>'
+    + '<div><label>Week #</label><input id="nw-no" type="number" value="' + (d.weeks.length ? (Math.max.apply(null, d.weeks.filter(function(x){return x.season===(w?w.season:new Date().getFullYear());}).map(function(x){return x.week_no;}).concat([0])) + 1) : 1) + '"></div></div>'
+    + '<div class="grid2"><div><label>College lock</label><input id="nw-cfb" type="datetime-local" value="' + toLocalInput(nextDow(6, 10)) + '"></div>'
+    + '<div><label>NFL lock</label><input id="nw-nfl" type="datetime-local" value="' + toLocalInput(nextDow(0, 11)) + '"></div></div>'
+    + '<div class="grid2"><div><label>College picks required</label><input id="nw-cfbn" type="number" min="0" value="3"></div>'
+    + '<div><label>NFL picks required</label><input id="nw-nfln" type="number" min="0" value="3"></div></div>'
+    + '<div class="btnrow"><button class="btn small" id="nw-create">Create week</button></div></div>';
+
+  html += '<div class="adm"><h4>Scoring</h4><p class="hint">Scores are pulled automatically a few hours after games end (whenever anyone opens the app). Use this to force it now.</p>'
+    + '<div class="btnrow"><button class="btn small ghost" id="ad-grade">Fetch scores &amp; grade now</button></div></div>';
+
+  html += '<div class="adm"><h4>Players</h4>';
+  d.players.forEach(function(p){
+    html += '<div class="pillrow"><span>' + esc(p.name) + (p.is_commissioner ? ' ★' : '') + (p.claimed ? '' : ' <span style="color:#87a794;font-size:11px">(unclaimed)</span>') + '</span>'
+      + '<span class="a"><button data-reset="' + p.id + '">reset pin</button>'
+      + (p.id !== d.me.id ? '<button data-del="' + p.id + '">remove</button>' : '') + '</span></div>';
+  });
+  html += '<label>Add player</label><input id="ap-name" placeholder="Name"><div class="btnrow"><button class="btn small" id="ap-add">Add</button></div></div>';
+
+  html += '<div class="adm"><h4>Settings</h4><p class="hint">' + (d.has_api_key
+      ? 'Odds API key is set.' + (d.odds_requests_remaining ? ' Requests remaining this month: ' + esc(d.odds_requests_remaining) + '.' : '')
+      : 'No Odds API key yet — get a free one at the-odds-api.com and paste it here. Spreads and scores won’t load without it.')
+    + '</p><label>The Odds API key</label><input id="cfg-key" placeholder="' + (d.has_api_key ? '•••••••• (saved — paste to replace)' : 'paste key') + '">'
+    + '<div class="btnrow"><button class="btn small" id="cfg-save">Save key</button></div></div>';
+
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+
+  function on(id, fn){ var b = el(id); if (b) b.addEventListener('click', fn); }
+  on('aw-save', function(){
+    api('/api/admin/week/update', { id: w.id, label: el('aw-label').value,
+      cfb_lock: toIso(el('aw-cfb').value), nfl_lock: toIso(el('aw-nfl').value),
+      cfb_required: +el('aw-cfbn').value, nfl_required: +el('aw-nfln').value
+    }).then(function(){ toast('Week saved'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('aw-load', function(){
+    var b = el('aw-load'); b.disabled = true;
+    api('/api/admin/load-games', { week_id: w.id }).then(function(r){
+      var parts = [];
+      Object.keys(r.loaded || {}).forEach(function(k){ parts.push(r.loaded[k] + ' ' + k.toUpperCase()); });
+      toast('Loaded spreads: ' + (parts.join(', ') || 'no games in window'));
+      load();
+    }).catch(function(e){ b.disabled = false; toast(e.message, true); });
+  });
+  on('aw-del', function(){
+    if (!confirm('Delete this week and all its picks?')) return;
+    api('/api/admin/week/delete', { id: w.id }).then(function(){ S.weekId = null; toast('Week deleted'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('nw-create', function(){
+    api('/api/admin/week', { season: +el('nw-season').value, week_no: +el('nw-no').value,
+      cfb_lock: toIso(el('nw-cfb').value), nfl_lock: toIso(el('nw-nfl').value),
+      cfb_required: +el('nw-cfbn').value, nfl_required: +el('nw-nfln').value
+    }).then(function(r){ S.weekId = r.week.id; toast('Week created — now load spreads'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('ad-grade', function(){
+    api('/api/admin/grade', {}).then(function(r){ toast('Graded ' + r.graded + ' pick' + (r.graded === 1 ? '' : 's')); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('ap-add', function(){
+    api('/api/admin/player', { name: el('ap-name').value }).then(function(){ toast('Player added'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('cfg-save', function(){
+    api('/api/admin/config', { odds_api_key: el('cfg-key').value }).then(function(){ toast('Saved'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  root.querySelectorAll('[data-reset]').forEach(function(b){
+    b.addEventListener('click', function(){
+      api('/api/admin/player/reset', { id: b.getAttribute('data-reset') }).then(function(){ toast('PIN reset — next sign-in sets a new one'); load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+  root.querySelectorAll('[data-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (!confirm('Remove this player and their picks?')) return;
+      api('/api/admin/player/delete', { id: b.getAttribute('data-del') }).then(function(){ toast('Removed'); load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+}
+
+function nextDow(dow, hour){
+  var d = new Date(); d.setHours(hour, 0, 0, 0);
+  while (d.getDay() !== dow || d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+
+// ---------- events ----------
+el('li-go').addEventListener('click', function(){
+  api('/api/login', { name: el('li-name').value, pin: el('li-pin').value }).then(function(r){
+    S.token = r.token; localStorage.setItem('sp_token', r.token);
+    if (r.player.first_login) toast('Welcome, ' + r.player.name + ' — your PIN is set. Don’t forget it!');
+    load();
+  }).catch(function(e){ toast(e.message, true); });
+});
+el('li-pin').addEventListener('keydown', function(e){ if (e.key === 'Enter') el('li-go').click(); });
+el('userchip').addEventListener('click', function(){
+  if (!confirm('Sign out?')) return;
+  api('/api/logout', {}).catch(function(){});
+  S.token = ''; S.data = null; localStorage.removeItem('sp_token'); render();
+});
+el('weeksel').addEventListener('change', function(){ S.weekId = el('weeksel').value; load(); });
+document.querySelectorAll('#nav button').forEach(function(b){
+  b.addEventListener('click', function(){
+    S.tab = b.getAttribute('data-tab');
+    document.querySelectorAll('#nav button').forEach(function(x){ x.classList.toggle('on', x === b); });
+    render();
+  });
+});
+
+// countdowns tick
+setInterval(function(){
+  document.querySelectorAll('[data-deadline]').forEach(function(n){
+    var ms = new Date(n.getAttribute('data-deadline')).getTime() - now();
+    var txt = fmtCountdown(ms);
+    if (n.textContent !== txt) n.textContent = txt;
+    if (ms <= 0 && !n._lockedOnce) { n._lockedOnce = true; load(); }
+  });
+}, 1000);
+// refresh data every 5 min while open
+setInterval(function(){ if (S.token) load(); }, 300000);
+
+if (S.token) load(); else render();
+})();
+</script>
+</body>
+</html>
