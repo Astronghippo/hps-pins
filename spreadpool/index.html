@@ -242,6 +242,22 @@ function leagueLocked(week, lg){
   var lock = lg === 'cfb' ? week.cfb_lock : week.nfl_lock;
   return !!lock && new Date(lock).getTime() <= now();
 }
+var SPORTS = {
+  americanfootball_ncaaf: { label: 'College', short: 'CFB' },
+  americanfootball_nfl: { label: 'NFL', short: 'NFL' },
+  baseball_mlb: { label: 'MLB · Run Line', short: 'MLB' }
+};
+var DEFAULT_SPORT = { cfb: 'americanfootball_ncaaf', nfl: 'americanfootball_nfl' };
+function sportOf(week, lg){ return (lg === 'cfb' ? week.cfb_sport : week.nfl_sport) || DEFAULT_SPORT[lg]; }
+function sportLabel(week, lg){ var s = SPORTS[sportOf(week, lg)]; return s ? s.label : lg.toUpperCase(); }
+function gameShort(g){ return (g.sport_key && SPORTS[g.sport_key]) ? SPORTS[g.sport_key].short : g.league.toUpperCase(); }
+function sportSelect(id, lg, current){
+  var def = lg === 'cfb' ? 'College football (default)' : 'NFL (default)';
+  return '<select id="' + id + '">'
+    + '<option value=""' + (!current ? ' selected' : '') + '>' + def + '</option>'
+    + '<option value="baseball_mlb"' + (current === 'baseball_mlb' ? ' selected' : '') + '>MLB (run lines)</option>'
+    + '</select>';
+}
 function toIso(dtLocal){ return dtLocal ? new Date(dtLocal).toISOString() : null; }
 function toLocalInput(iso){
   if (!iso) return '';
@@ -319,8 +335,8 @@ function renderPicks(){
   var d = S.data, w = d.week, root = el('tab-picks');
   if (!w) { root.innerHTML = '<div class="empty"><span class="big">No week is set up yet</span>' + (d.me.is_commissioner ? 'Head to Admin to create Week 1.' : 'The commissioner hasn’t opened a week yet.') + '</div>'; return; }
   var html = '';
-  [['cfb','College','cfb_required'],['nfl','NFL','nfl_required']].forEach(function(cfg){
-    var lg = cfg[0], label = cfg[1], required = w[cfg[2]];
+  [['cfb','cfb_required'],['nfl','nfl_required']].forEach(function(cfg){
+    var lg = cfg[0], label = sportLabel(w, lg), required = w[cfg[1]];
     if (required <= 0) return;
     var games = d.games.filter(function(g){ return g.league === lg; });
     var mine = myPicksFor(lg);
@@ -393,13 +409,13 @@ function renderBoard(){
       var spH = p.spread_home_at_pick !== null && p.spread_home_at_pick !== undefined ? p.spread_home_at_pick : g.spread_home;
       var spread = fmtSpread(p.side === 'home' ? spH : (spH === null ? null : -Number(spH)));
       var res = p.result ? '<span class="res ' + p.result + '">' + p.result.toUpperCase() + '</span>' : '<span class="res tbd">TBD</span>';
-      rows += '<div class="pickrow"><span class="lg">' + g.league.toUpperCase() + '</span><span class="who">' + esc(team) + '</span><span class="num">' + spread + '</span>' + res + '</div>';
+      rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + '</span><span class="num">' + spread + '</span>' + res + '</div>';
     });
     var hid = d.hiddenCounts && d.hiddenCounts[pl.id];
     if (hid) {
       var parts = [];
-      if (hid.cfb) parts.push(hid.cfb + ' college');
-      if (hid.nfl) parts.push(hid.nfl + ' NFL');
+      if (hid.cfb) parts.push(hid.cfb + ' ' + sportLabel(w, 'cfb'));
+      if (hid.nfl) parts.push(hid.nfl + ' ' + sportLabel(w, 'nfl'));
       rows += '<div class="hiddennote">' + parts.join(' + ') + ' pick' + ((hid.cfb||0)+(hid.nfl||0) > 1 ? 's' : '') + ' in — hidden until lock 🔒</div>';
     }
     if (!rows) rows = '<div class="hiddennote">No picks in yet.</div>';
@@ -438,12 +454,14 @@ function renderAdmin(){
 
   html += '<div class="adm"><h4>This Week</h4>';
   if (w) {
-    html += '<p class="hint">Edit ' + esc(w.label || ('Week ' + w.week_no)) + '. Set required picks to 0 for a league that isn’t playing (early season, bowl season, playoffs).</p>'
+    html += '<p class="hint">Edit ' + esc(w.label || ('Week ' + w.week_no)) + '. Set required picks to 0 for a league that isn’t playing (early season, bowl season, playoffs). Point a slot at MLB run lines for a practice week.</p>'
       + '<label>Label</label><input id="aw-label" value="' + esc(w.label || '') + '">'
-      + '<div class="grid2"><div><label>College lock</label><input id="aw-cfb" type="datetime-local" value="' + toLocalInput(w.cfb_lock) + '"></div>'
-      + '<div><label>NFL lock</label><input id="aw-nfl" type="datetime-local" value="' + toLocalInput(w.nfl_lock) + '"></div></div>'
-      + '<div class="grid2"><div><label>College picks required</label><input id="aw-cfbn" type="number" min="0" max="10" value="' + w.cfb_required + '"></div>'
-      + '<div><label>NFL picks required</label><input id="aw-nfln" type="number" min="0" max="10" value="' + w.nfl_required + '"></div></div>'
+      + '<div class="grid2"><div><label>Slot 1 sport</label>' + sportSelect('aw-cfbs', 'cfb', w.cfb_sport) + '</div>'
+      + '<div><label>Slot 2 sport</label>' + sportSelect('aw-nfls', 'nfl', w.nfl_sport) + '</div></div>'
+      + '<div class="grid2"><div><label>Slot 1 lock</label><input id="aw-cfb" type="datetime-local" value="' + toLocalInput(w.cfb_lock) + '"></div>'
+      + '<div><label>Slot 2 lock</label><input id="aw-nfl" type="datetime-local" value="' + toLocalInput(w.nfl_lock) + '"></div></div>'
+      + '<div class="grid2"><div><label>Slot 1 picks required</label><input id="aw-cfbn" type="number" min="0" max="10" value="' + w.cfb_required + '"></div>'
+      + '<div><label>Slot 2 picks required</label><input id="aw-nfln" type="number" min="0" max="10" value="' + w.nfl_required + '"></div></div>'
       + '<div class="btnrow"><button class="btn small" id="aw-save">Save week</button>'
       + '<button class="btn small ghost" id="aw-load">Load / refresh spreads</button>'
       + '<button class="btn small danger" id="aw-del">Delete week</button></div>';
@@ -452,13 +470,15 @@ function renderAdmin(){
   }
   html += '</div>';
 
-  html += '<div class="adm"><h4>New Week</h4><p class="hint">Locks default to your local time. Games are pulled for the surrounding window automatically.</p>'
+  html += '<div class="adm"><h4>New Week</h4><p class="hint">Locks default to your local time. Games are pulled for the surrounding window automatically. Slot 1 is college, slot 2 is NFL — unless you point one at another sport.</p>'
     + '<div class="grid2"><div><label>Season</label><input id="nw-season" type="number" value="' + (w ? w.season : new Date().getFullYear()) + '"></div>'
     + '<div><label>Week #</label><input id="nw-no" type="number" value="' + (d.weeks.length ? (Math.max.apply(null, d.weeks.filter(function(x){return x.season===(w?w.season:new Date().getFullYear());}).map(function(x){return x.week_no;}).concat([0])) + 1) : 1) + '"></div></div>'
-    + '<div class="grid2"><div><label>College lock</label><input id="nw-cfb" type="datetime-local" value="' + toLocalInput(nextDow(6, 10)) + '"></div>'
-    + '<div><label>NFL lock</label><input id="nw-nfl" type="datetime-local" value="' + toLocalInput(nextDow(0, 11)) + '"></div></div>'
-    + '<div class="grid2"><div><label>College picks required</label><input id="nw-cfbn" type="number" min="0" value="3"></div>'
-    + '<div><label>NFL picks required</label><input id="nw-nfln" type="number" min="0" value="3"></div></div>'
+    + '<div class="grid2"><div><label>Slot 1 sport</label>' + sportSelect('nw-cfbs', 'cfb', null) + '</div>'
+    + '<div><label>Slot 2 sport</label>' + sportSelect('nw-nfls', 'nfl', null) + '</div></div>'
+    + '<div class="grid2"><div><label>Slot 1 lock</label><input id="nw-cfb" type="datetime-local" value="' + toLocalInput(nextDow(6, 10)) + '"></div>'
+    + '<div><label>Slot 2 lock</label><input id="nw-nfl" type="datetime-local" value="' + toLocalInput(nextDow(0, 11)) + '"></div></div>'
+    + '<div class="grid2"><div><label>Slot 1 picks required</label><input id="nw-cfbn" type="number" min="0" value="3"></div>'
+    + '<div><label>Slot 2 picks required</label><input id="nw-nfln" type="number" min="0" value="3"></div></div>'
     + '<div class="btnrow"><button class="btn small" id="nw-create">Create week</button></div></div>';
 
   html += '<div class="adm"><h4>Scoring</h4><p class="hint">Scores are pulled automatically a few hours after games end (whenever anyone opens the app). Use this to force it now.</p>'
@@ -484,7 +504,8 @@ function renderAdmin(){
   on('aw-save', function(){
     api('/api/admin/week/update', { id: w.id, label: el('aw-label').value,
       cfb_lock: toIso(el('aw-cfb').value), nfl_lock: toIso(el('aw-nfl').value),
-      cfb_required: +el('aw-cfbn').value, nfl_required: +el('aw-nfln').value
+      cfb_required: +el('aw-cfbn').value, nfl_required: +el('aw-nfln').value,
+      cfb_sport: el('aw-cfbs').value || null, nfl_sport: el('aw-nfls').value || null
     }).then(function(){ toast('Week saved'); load(); }).catch(function(e){ toast(e.message, true); });
   });
   on('aw-load', function(){
@@ -503,7 +524,8 @@ function renderAdmin(){
   on('nw-create', function(){
     api('/api/admin/week', { season: +el('nw-season').value, week_no: +el('nw-no').value,
       cfb_lock: toIso(el('nw-cfb').value), nfl_lock: toIso(el('nw-nfl').value),
-      cfb_required: +el('nw-cfbn').value, nfl_required: +el('nw-nfln').value
+      cfb_required: +el('nw-cfbn').value, nfl_required: +el('nw-nfln').value,
+      cfb_sport: el('nw-cfbs').value || null, nfl_sport: el('nw-nfls').value || null
     }).then(function(r){ S.weekId = r.week.id; toast('Week created — now load spreads'); load(); }).catch(function(e){ toast(e.message, true); });
   });
   on('ad-grade', function(){
