@@ -78,6 +78,12 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .lockstrip .sub{font-size:11px;color:#87a794;display:block;font-family:'Barlow';letter-spacing:0}
 .linenote{font-size:12px;color:#87a794;line-height:1.45;margin:-2px 0 10px;padding:0 2px}
 .linenote b{color:var(--gold);font-weight:600}
+.revstrip{background:var(--felt2);border:1px solid var(--line);border-radius:6px;padding:9px 13px;margin:0 0 10px;font-size:13px;line-height:1.8}
+.revstrip b{color:var(--gold)}
+.revstrip .cdi{font-family:'Spline Sans Mono';color:var(--gold);font-weight:700;font-size:12px}
+.egg{background:none;border:1.5px dashed rgba(244,237,220,.25);border-radius:5px;font-size:14px;line-height:1;padding:3px 7px;cursor:pointer;margin-left:8px;opacity:.5;transition:all .12s}
+.egg.on{opacity:1;border-style:solid;border-color:var(--gold2);background:rgba(217,164,65,.15);transform:scale(1.1)}
+.eggflags{margin-left:6px;font-size:13px;cursor:default}
 
 /* ---------- section heads ---------- */
 .sechead{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 8px}
@@ -409,7 +415,20 @@ function renderBoard(){
   var d = S.data, w = d.week, root = el('tab-board');
   if (!w) { root.innerHTML = '<div class="empty"><span class="big">Nothing on the board</span></div>'; return; }
   var html = '<div class="sechead"><h3>' + esc(w.label || ('Week ' + w.week_no)) + ' Board</h3></div>';
-  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.</p>';
+  // when do picks flip face-up?
+  var revs = '', anyRevealed = false;
+  ['cfb','nfl'].forEach(function(lg){
+    var req = lg === 'cfb' ? w.cfb_required : w.nfl_required;
+    var lock = lg === 'cfb' ? w.cfb_lock : w.nfl_lock;
+    if (req <= 0 || !lock) return;
+    if (leagueLocked(w, lg)) { anyRevealed = true; revs += '<div>' + sportLabel(w, lg) + ' picks: <b>revealed</b></div>'; }
+    else revs += '<div>' + sportLabel(w, lg) + ' picks reveal ' + esc(fmtTime(lock)) + ' · <span class="cdi" data-deadline="' + esc(lock) + '">' + fmtCountdown(new Date(lock).getTime() - now()) + '</span></div>';
+  });
+  if (revs) html += '<div class="revstrip">' + revs + '</div>';
+  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.'
+    + (anyRevealed ? ' 🍆 = your “worst pick of the week” call — tap the 🍆 on one rival pick you think is doomed (you can move it until that game goes final). Nail it and it counts on the scoreboard.' : '')
+    + '</p>';
+  var eggs = d.eggplants || [];
   d.players.forEach(function(pl){
     var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
     var wn = 0, ln = 0, pn = 0;
@@ -425,7 +444,17 @@ function renderBoard(){
       var spH = p.spread_home_at_pick !== null && p.spread_home_at_pick !== undefined ? p.spread_home_at_pick : g.spread_home;
       var spread = fmtSpread(p.side === 'home' ? spH : (spH === null ? null : -Number(spH)));
       var res = p.result ? '<span class="res ' + p.result + '">' + p.result.toUpperCase() + '</span>' : '<span class="res tbd">TBD</span>';
-      rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + '</span><span class="num">' + spread + '</span>' + res + '</div>';
+      var flags = eggs.filter(function(e){ return e.pick_id === p.id && e.flagger_id !== d.me.id; });
+      var flagHtml = '';
+      if (flags.length) {
+        var names = flags.map(function(e){ var f = d.players.find(function(x){ return x.id === e.flagger_id; }); return f ? f.name : '?'; }).join(', ');
+        var emo = ''; for (var i = 0; i < flags.length; i++) emo += '🍆';
+        flagHtml = '<span class="eggflags" title="Called worst by ' + esc(names) + '">' + emo + '</span>';
+      }
+      var myEgged = eggs.some(function(e){ return e.pick_id === p.id && e.flagger_id === d.me.id; });
+      var canEgg = pl.id !== d.me.id && leagueLocked(w, g.league) && !g.completed;
+      var btn = (canEgg || myEgged) ? '<button class="egg' + (myEgged ? ' on' : '') + '" data-egg="' + p.id + '" title="Flag as worst pick of the week">🍆</button>' : '';
+      rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + flagHtml + '</span><span class="num">' + spread + '</span>' + res + btn + '</div>';
     });
     var hid = d.hiddenCounts && d.hiddenCounts[pl.id];
     if (hid) {
@@ -437,7 +466,26 @@ function renderBoard(){
     if (!rows) rows = '<div class="hiddennote">No picks in yet.</div>';
     html += rows + '</div>';
   });
-  root.innerHTML = '<div class="fade">' + html + '</div>';
+  root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '>' + html + '</div>';
+  root._rendered = true;
+
+  root.querySelectorAll('[data-egg]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var pid = b.getAttribute('data-egg'), dd = S.data, call;
+      dd.eggplants = dd.eggplants || [];
+      var mine = dd.eggplants.find(function(e){ return e.flagger_id === dd.me.id; });
+      if (mine && mine.pick_id === pid) {
+        dd.eggplants = dd.eggplants.filter(function(e){ return e !== mine; });
+        call = api('/api/eggplant', { pick_id: null, week_id: dd.week.id });
+      } else {
+        if (mine) mine.pick_id = pid;
+        else dd.eggplants.push({ flagger_id: dd.me.id, pick_id: pid });
+        call = api('/api/eggplant', { pick_id: pid });
+      }
+      render();
+      call.catch(function(e){ toast(e.message, true); load(); });
+    });
+  });
 }
 
 function renderStandings(){
@@ -450,16 +498,18 @@ function renderStandings(){
     d.players.forEach(function(p){ claimed[p.id] = p.claimed; });
     var anyGraded = d.standings.some(function(s){ return s.wins + s.losses + s.pushes > 0; });
     if (!anyGraded) html += '<p style="color:#87a794;font-size:12.5px;margin-bottom:2px">The field is set — records go live once the first picks are graded.</p>';
-    html += '<table><tr><th></th><th>Player</th><th class="r">W</th><th class="r">L</th><th class="r">P</th><th class="r">Win %</th></tr>';
+    html += '<table><tr><th></th><th>Player</th><th class="r">W</th><th class="r">L</th><th class="r">P</th><th class="r">Win %</th><th class="r">🍆✓</th><th class="r">🍆</th></tr>';
     d.standings.forEach(function(s, i){
       var tot = s.wins + s.losses;
       var pct = tot ? Math.round(1000 * s.wins / tot) / 10 : 0;
       var tag = claimed[s.player_id] === false ? ' <span style="color:#87a794;font-size:11px;font-weight:400">hasn’t signed in yet</span>' : '';
       html += '<tr' + (s.player_id === d.me.id ? ' class="me"' : '') + '><td class="rank">' + (anyGraded ? (i+1) : '•') + '</td><td class="nm">' + esc(s.name) + tag + '</td>'
         + '<td class="r mono">' + s.wins + '</td><td class="r mono">' + s.losses + '</td><td class="r mono">' + s.pushes + '</td>'
-        + '<td class="r mono">' + (tot ? pct + '%' : '—') + '</td></tr>';
+        + '<td class="r mono">' + (tot ? pct + '%' : '—') + '</td>'
+        + '<td class="r mono">' + (s.egg_hits || 0) + '</td><td class="r mono">' + (s.egg_received || 0) + '</td></tr>';
     });
     html += '</table>';
+    html += '<p style="color:#87a794;font-size:12px;line-height:1.5">🍆✓ = worst-pick calls you made that actually lost (you nailed it) · 🍆 = times one of your picks got flagged. Each player gets one 🍆 per week to place on a rival’s pick after reveal.</p>';
   }
   root.innerHTML = '<div class="fade">' + html + '</div>';
 }
