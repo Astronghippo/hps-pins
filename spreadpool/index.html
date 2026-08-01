@@ -371,14 +371,24 @@ function renderPicks(){
     });
   });
   if (w.cfb_required <= 0 && w.nfl_required <= 0) html = '<div class="empty"><span class="big">Bye week</span>Nothing required this week.</div>';
-  root.innerHTML = '<div class="fade">' + html + '</div>';
+  root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '>' + html + '</div>';
+  root._rendered = true;
 
   root.querySelectorAll('.side[data-g]').forEach(function(b){
     b.addEventListener('click', function(){
       var gid = b.getAttribute('data-g'), side = b.getAttribute('data-s');
-      var mp = pickFor(gid, S.data.me.id);
-      var call = (mp && mp.side === side) ? api('/api/unpick', { game_id: gid }) : api('/api/pick', { game_id: gid, side: side });
-      call.then(function(){ return load(); }).catch(function(e){ toast(e.message, true); });
+      var dd = S.data, mp = pickFor(gid, dd.me.id), call;
+      // optimistic: update the UI instantly, let the server confirm in the background
+      if (mp && mp.side === side) {
+        dd.picks = dd.picks.filter(function(p){ return p !== mp; });
+        call = api('/api/unpick', { game_id: gid });
+      } else {
+        if (mp) { mp.side = side; }
+        else dd.picks.push({ id: 'tmp-' + gid, week_id: dd.week.id, player_id: dd.me.id, game_id: gid, side: side, spread_home_at_pick: null, result: null });
+        call = api('/api/pick', { game_id: gid, side: side });
+      }
+      render();
+      call.catch(function(e){ toast(e.message, true); load(); }); // server said no — roll back
     });
   });
 }
