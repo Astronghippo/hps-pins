@@ -425,9 +425,10 @@ function renderBoard(){
     else revs += '<div>' + sportLabel(w, lg) + ' picks reveal ' + esc(fmtTime(lock)) + ' · <span class="cdi" data-deadline="' + esc(lock) + '">' + fmtCountdown(new Date(lock).getTime() - now()) + '</span></div>';
   });
   if (revs) html += '<div class="revstrip">' + revs + '</div>';
-  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.'
-    + (anyRevealed ? ' 🍆 = your “worst pick of the week” call — tap the 🍆 on one rival pick you think is doomed (you can move it until that game goes final). Nail it and it counts on the scoreboard.' : '')
-    + '</p>';
+  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.</p>';
+  html += '<div class="revstrip" style="line-height:1.55;font-size:12.5px">🍆 <b>The Worst-Pick Call:</b> each week you get <b>one 🍆</b> to plant on a rival’s pick — the one you think is doomed. '
+    + (anyRevealed ? '<b>Open now:</b> tap the 🍆 next to any rival pick below.' : 'It opens the moment picks are revealed (see countdown above).')
+    + ' Move it as often as you like, but each pick closes to 🍆 as soon as its game goes final — so don’t sit on it. If your flagged pick loses, you score a 🍆✓ on the standings.</div>';
   var eggs = d.eggplants || [];
   d.players.forEach(function(pl){
     var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
