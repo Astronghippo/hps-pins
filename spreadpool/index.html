@@ -76,6 +76,8 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .lockstrip .cd{font-family:'Spline Sans Mono';font-weight:700;font-size:15px;color:var(--gold)}
 .lockstrip.closed .cd{color:var(--red)}
 .lockstrip .sub{font-size:11px;color:#87a794;display:block;font-family:'Barlow';letter-spacing:0}
+.linenote{font-size:12px;color:#87a794;line-height:1.45;margin:-2px 0 10px;padding:0 2px}
+.linenote b{color:var(--gold);font-weight:600}
 
 /* ---------- section heads ---------- */
 .sechead{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 8px}
@@ -223,7 +225,7 @@ function api(path, body){
 }
 
 function fmtSpread(v){
-  if (v === null || v === undefined) return 'PK';
+  if (v === null || v === undefined) return 'TBD';
   var n = Number(v);
   if (n === 0) return 'PK';
   return (n > 0 ? '+' : '') + (n % 1 === 0 ? n : n.toFixed(1));
@@ -348,14 +350,18 @@ function renderPicks(){
       return;
     }
     var locked = leagueLocked(w, lg);
+    if (!locked) {
+      html += '<p class="linenote">📌 Lines shown are <b>live</b> and can move until lock. Every pick pays out at <b>whatever the line is at lock time</b> — not the line when you tapped it. Games marked TBD don’t have a posted line yet; they open up for picking once one lands.</p>';
+    }
     games.forEach(function(g){
       var started = new Date(g.commence_time).getTime() <= now();
-      var frozen = locked || started;
+      var noLine = g.spread_home === null || g.spread_home === undefined;
+      var frozen = locked || started || noLine;
       var mp = pickFor(g.id, d.me.id);
       var sp = Number(g.spread_home);
       var homeSp = fmtSpread(g.spread_home), awaySp = fmtSpread(g.spread_home === null ? null : -sp);
       html += '<div class="ticket' + (frozen ? ' locked' : '') + '" >'
-        + '<div class="meta"><span>' + esc(fmtTime(g.commence_time)) + '</span><span>' + esc((g.bookmaker || '').toUpperCase()) + ' LINE</span></div>'
+        + '<div class="meta"><span>' + esc(fmtTime(g.commence_time)) + '</span><span>' + (noLine ? 'LINE TBD' : esc((g.bookmaker || '').toUpperCase()) + ' LINE') + '</span></div>'
         + '<div class="sides">'
         + sideBtn(g, 'away', g.away_team, awaySp, sp > 0, mp, frozen)
         + sideBtn(g, 'home', g.home_team, homeSp, sp < 0, mp, frozen)
@@ -393,7 +399,7 @@ function renderBoard(){
   var d = S.data, w = d.week, root = el('tab-board');
   if (!w) { root.innerHTML = '<div class="empty"><span class="big">Nothing on the board</span></div>'; return; }
   var html = '<div class="sechead"><h3>' + esc(w.label || ('Week ' + w.week_no)) + ' Board</h3></div>';
-  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks appear once that league locks (or a game kicks off).</p>';
+  html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.</p>';
   d.players.forEach(function(pl){
     var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
     var wn = 0, ln = 0, pn = 0;
