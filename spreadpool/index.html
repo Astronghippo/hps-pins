@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The Spread Pool</title>
+<title>Spread'em Pool</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -164,7 +164,7 @@ tr.me td{background:rgba(217,164,65,.07)}
 <body>
 <div class="wrap">
   <header>
-    <div class="wordmark">The <span>Spread</span> Pool</div>
+    <div class="wordmark"><span>Spread&#8217;em</span> Pool</div>
     <div class="tagline">Six picks · Two leagues · No excuses</div>
     <div class="rule"></div>
   </header>
@@ -411,14 +411,19 @@ function renderBoard(){
 function renderStandings(){
   var d = S.data, root = el('tab-standings');
   var html = '<div class="sechead"><h3>Season Standings</h3></div>';
-  if (!d.standings.length || d.standings.every(function(s){ return s.wins + s.losses + s.pushes === 0; })) {
-    html += '<div class="empty"><span class="big">Clean slate</span>Standings appear once picks get graded.</div>';
+  if (!d.standings.length) {
+    html += '<div class="empty"><span class="big">No players yet</span>The commissioner adds players from the Admin tab.</div>';
   } else {
+    var claimed = {};
+    d.players.forEach(function(p){ claimed[p.id] = p.claimed; });
+    var anyGraded = d.standings.some(function(s){ return s.wins + s.losses + s.pushes > 0; });
+    if (!anyGraded) html += '<p style="color:#87a794;font-size:12.5px;margin-bottom:2px">The field is set — records go live once the first picks are graded.</p>';
     html += '<table><tr><th></th><th>Player</th><th class="r">W</th><th class="r">L</th><th class="r">P</th><th class="r">Win %</th></tr>';
     d.standings.forEach(function(s, i){
       var tot = s.wins + s.losses;
       var pct = tot ? Math.round(1000 * s.wins / tot) / 10 : 0;
-      html += '<tr' + (s.player_id === d.me.id ? ' class="me"' : '') + '><td class="rank">' + (i+1) + '</td><td class="nm">' + esc(s.name) + '</td>'
+      var tag = claimed[s.player_id] === false ? ' <span style="color:#87a794;font-size:11px;font-weight:400">hasn’t signed in yet</span>' : '';
+      html += '<tr' + (s.player_id === d.me.id ? ' class="me"' : '') + '><td class="rank">' + (anyGraded ? (i+1) : '•') + '</td><td class="nm">' + esc(s.name) + tag + '</td>'
         + '<td class="r mono">' + s.wins + '</td><td class="r mono">' + s.losses + '</td><td class="r mono">' + s.pushes + '</td>'
         + '<td class="r mono">' + (tot ? pct + '%' : '—') + '</td></tr>';
     });
