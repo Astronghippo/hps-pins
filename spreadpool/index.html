@@ -429,8 +429,14 @@ function renderBoard(){
   html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.</p>';
   html += '<div class="revstrip" style="line-height:1.55;font-size:12.5px">🍆 <b>The Worst-Pick Call:</b> each week you get <b>one 🍆</b> to plant on a rival’s pick — the one you think is doomed. '
     + (anyRevealed ? '<b>Open now:</b> tap the 🍆 next to any rival pick below.' : 'It opens the moment picks are revealed (see countdown above).')
-    + ' Move it as often as you like, but each game closes to 🍆 at first pitch / kickoff — and once the game you flagged starts, your 🍆 is locked in for the week. If your flagged pick loses, you score a 🍆✓ on the standings.</div>';
+    + ' Move it as often as you like, but each game closes to 🍆 at first pitch / kickoff — and once the game you flagged starts, your 🍆 is locked in for the week. One 🍆 covers <b>every rival on the same bet</b> (same team, same game). If the flagged bet loses, you score a 🍆✓ per player you caught.</div>';
   var eggs = d.eggplants || [];
+  function eggAnchor(egg){ return d.picks.find(function(x){ return x.id === egg.pick_id; }); }
+  function eggCovers(egg, p){
+    if (egg.flagger_id === p.player_id) return false; // a flag never lands on the flagger's own pick
+    var a = eggAnchor(egg);
+    return !!a && a.game_id === p.game_id && a.side === p.side;
+  }
   d.players.forEach(function(pl){
     var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
     var wn = 0, ln = 0, pn = 0;
@@ -446,14 +452,14 @@ function renderBoard(){
       var spH = p.spread_home_at_pick !== null && p.spread_home_at_pick !== undefined ? p.spread_home_at_pick : g.spread_home;
       var spread = fmtSpread(p.side === 'home' ? spH : (spH === null ? null : -Number(spH)));
       var res = p.result ? '<span class="res ' + p.result + '">' + p.result.toUpperCase() + '</span>' : '<span class="res tbd">TBD</span>';
-      var flags = eggs.filter(function(e){ return e.pick_id === p.id && e.flagger_id !== d.me.id; });
+      var flags = eggs.filter(function(e){ return e.flagger_id !== d.me.id && eggCovers(e, p); });
       var flagHtml = '';
       if (flags.length) {
         var names = flags.map(function(e){ var f = d.players.find(function(x){ return x.id === e.flagger_id; }); return f ? f.name : '?'; }).join(', ');
         var emo = ''; for (var i = 0; i < flags.length; i++) emo += '🍆';
         flagHtml = '<span class="eggflags" title="Called worst by ' + esc(names) + '">' + emo + '</span>';
       }
-      var myEgged = eggs.some(function(e){ return e.pick_id === p.id && e.flagger_id === d.me.id; });
+      var myEgged = eggs.some(function(e){ return e.flagger_id === d.me.id && eggCovers(e, p); });
       var gStarted = new Date(g.commence_time).getTime() <= now();
       var canEgg = pl.id !== d.me.id && leagueLocked(w, g.league) && !gStarted;
       var btn = '';
@@ -480,7 +486,10 @@ function renderBoard(){
       var pid = b.getAttribute('data-egg'), dd = S.data, call;
       dd.eggplants = dd.eggplants || [];
       var mine = dd.eggplants.find(function(e){ return e.flagger_id === dd.me.id; });
-      if (mine && mine.pick_id === pid) {
+      var target = dd.picks.find(function(x){ return x.id === pid; });
+      var mineAnchor = mine ? dd.picks.find(function(x){ return x.id === mine.pick_id; }) : null;
+      var sameBet = mineAnchor && target && mineAnchor.game_id === target.game_id && mineAnchor.side === target.side;
+      if (mine && sameBet) {
         dd.eggplants = dd.eggplants.filter(function(e){ return e !== mine; });
         call = api('/api/eggplant', { pick_id: null, week_id: dd.week.id });
       } else {
@@ -515,7 +524,7 @@ function renderStandings(){
         + '<td class="r mono">' + (s.egg_hits || 0) + '</td><td class="r mono">' + (s.egg_received || 0) + '</td></tr>';
     });
     html += '</table>';
-    html += '<p style="color:#87a794;font-size:12px;line-height:1.5">🍆✓ = worst-pick calls you made that actually lost (you nailed it) · 🍆 = times one of your picks got flagged. Each player gets one 🍆 per week to place on a rival’s pick after reveal.</p>';
+    html += '<p style="color:#87a794;font-size:12px;line-height:1.5">🍆✓ = worst-pick calls that lost — one per player caught, since a 🍆 covers everyone on the same bet · 🍆 = times one of your picks was covered by a flag. Each player gets one 🍆 per week, placed after reveal.</p>';
   }
   root.innerHTML = '<div class="fade">' + html + '</div>';
 }
