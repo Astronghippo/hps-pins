@@ -429,7 +429,7 @@ function renderBoard(){
   html += '<p class="hint" style="color:#87a794;font-size:12.5px;margin-bottom:6px">Everyone’s picks stay hidden until that league’s lock passes.</p>';
   html += '<div class="revstrip" style="line-height:1.55;font-size:12.5px">🍆 <b>The Worst-Pick Call:</b> each week you get <b>one 🍆</b> to plant on a rival’s pick — the one you think is doomed. '
     + (anyRevealed ? '<b>Open now:</b> tap the 🍆 next to any rival pick below.' : 'It opens the moment picks are revealed (see countdown above).')
-    + ' Move it as often as you like, but each pick closes to 🍆 as soon as its game goes final — so don’t sit on it. If your flagged pick loses, you score a 🍆✓ on the standings.</div>';
+    + ' Move it as often as you like, but each game closes to 🍆 at first pitch / kickoff — and once the game you flagged starts, your 🍆 is locked in for the week. If your flagged pick loses, you score a 🍆✓ on the standings.</div>';
   var eggs = d.eggplants || [];
   d.players.forEach(function(pl){
     var picks = d.picks.filter(function(p){ return p.player_id === pl.id; });
@@ -454,8 +454,11 @@ function renderBoard(){
         flagHtml = '<span class="eggflags" title="Called worst by ' + esc(names) + '">' + emo + '</span>';
       }
       var myEgged = eggs.some(function(e){ return e.pick_id === p.id && e.flagger_id === d.me.id; });
-      var canEgg = pl.id !== d.me.id && leagueLocked(w, g.league) && !g.completed;
-      var btn = (canEgg || myEgged) ? '<button class="egg' + (myEgged ? ' on' : '') + '" data-egg="' + p.id + '" title="Flag as worst pick of the week">🍆</button>' : '';
+      var gStarted = new Date(g.commence_time).getTime() <= now();
+      var canEgg = pl.id !== d.me.id && leagueLocked(w, g.league) && !gStarted;
+      var btn = '';
+      if (canEgg) btn = '<button class="egg' + (myEgged ? ' on' : '') + '" data-egg="' + p.id + '" title="Flag as worst pick of the week">🍆</button>';
+      else if (myEgged) btn = '<button class="egg on" title="Locked in — game started">🍆</button>';
       var opp = p.side === 'home' ? 'vs ' + g.away_team : '@ ' + g.home_team;
       rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + flagHtml + '<span class="opp">' + esc(opp) + '</span></span><span class="num">' + spread + '</span>' + res + btn + '</div>';
     });
