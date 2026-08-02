@@ -128,6 +128,7 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .pickrow:last-child{border-bottom:none}
 .pickrow .lg{font-family:'Spline Sans Mono';font-size:9px;letter-spacing:.16em;color:#87a794;width:30px}
 .pickrow .who{flex:1;font-weight:600}
+.pickrow .opp{display:block;color:#87a794;font-weight:400;font-size:11.5px;margin-top:1px}
 .pickrow .num{font-family:'Spline Sans Mono';font-weight:700;font-size:13px;color:var(--gold);margin-left:8px}
 .pickrow .res{font-family:'Spline Sans Mono';font-weight:700;font-size:11px;letter-spacing:.1em;margin-left:10px;padding:2px 7px;border-radius:3px}
 .res.win{background:var(--win);color:#eafff2}.res.loss{background:var(--red);color:#ffecec}
@@ -455,7 +456,8 @@ function renderBoard(){
       var myEgged = eggs.some(function(e){ return e.pick_id === p.id && e.flagger_id === d.me.id; });
       var canEgg = pl.id !== d.me.id && leagueLocked(w, g.league) && !g.completed;
       var btn = (canEgg || myEgged) ? '<button class="egg' + (myEgged ? ' on' : '') + '" data-egg="' + p.id + '" title="Flag as worst pick of the week">🍆</button>' : '';
-      rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + flagHtml + '</span><span class="num">' + spread + '</span>' + res + btn + '</div>';
+      var opp = p.side === 'home' ? 'vs ' + g.away_team : '@ ' + g.home_team;
+      rows += '<div class="pickrow"><span class="lg">' + gameShort(g) + '</span><span class="who">' + esc(team) + flagHtml + '<span class="opp">' + esc(opp) + '</span></span><span class="num">' + spread + '</span>' + res + btn + '</div>';
     });
     var hid = d.hiddenCounts && d.hiddenCounts[pl.id];
     if (hid) {
