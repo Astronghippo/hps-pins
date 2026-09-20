@@ -64,6 +64,32 @@ nav button{flex:1;max-width:150px;background:none;border:none;color:#87a794;curs
   font-family:'Big Shoulders Display';font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;padding:10px 4px;border-radius:6px}
 nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),var(--gold2))}
 
+/* ---------- league switcher (Picks) ---------- */
+.segbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin:16px 0 4px;
+  background:var(--felt2);border:1px solid var(--line);border-radius:8px;padding:5px}
+.seg{background:none;border:none;border-radius:6px;cursor:pointer;padding:9px 6px 8px;color:#87a794;
+  display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .12s,color .12s}
+.seg .sl{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.07em;text-transform:uppercase;line-height:1}
+.seg .sc{font-family:'Spline Sans Mono';font-weight:700;font-size:11px;letter-spacing:.1em;opacity:.8}
+.seg.on{background:linear-gradient(180deg,var(--gold),var(--gold2));color:var(--felt)}
+.seg.on .sc{opacity:.9}
+.seg .sc.full{color:var(--win);filter:brightness(1.7)}
+.seg.on .sc.full{color:var(--felt);filter:none}
+
+/* ---------- standings splits ---------- */
+.splitcard{background:var(--felt2);border:1px solid var(--line);border-radius:7px;padding:10px 12px 12px;margin:9px 0}
+.splitcard.me{border-color:var(--gold2);background:rgba(217,164,65,.07)}
+.splitcard .who{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.05em;
+  text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
+.splitcard .who .tot{font-family:'Spline Sans Mono';font-size:12px;font-weight:700;color:var(--gold);letter-spacing:.08em}
+.cells{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cell{background:rgba(10,31,20,.55);border:1px solid rgba(29,66,48,.9);border-radius:5px;padding:7px 8px}
+.cell .k{font-family:'Spline Sans Mono';font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#87a794}
+.cell .v{font-family:'Spline Sans Mono';font-weight:700;font-size:16px;margin-top:2px;color:var(--paper)}
+.cell .v.up{color:var(--win);filter:brightness(1.6)}
+.cell .v.down{color:var(--red);filter:brightness(1.25)}
+.cell .v.none{color:#5c7a68}
+
 /* ---------- week bar ---------- */
 .weekbar{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
 .weekbar select{flex:1;background:var(--felt2);color:var(--paper);border:1px solid var(--line);font-weight:700}
@@ -214,7 +240,7 @@ tr.me td{background:rgba(217,164,65,.07)}
 (function(){
 "use strict";
 var BASE = 'https://ufdfznoerzesjpkagsbt.supabase.co/functions/v1/spreadpool';
-var S = { token: localStorage.getItem('sp_token') || '', data: null, tab: 'picks', weekId: null, clockSkew: 0 };
+var S = { token: localStorage.getItem('sp_token') || '', data: null, tab: 'picks', weekId: null, clockSkew: 0, pickLg: null };
 
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -331,6 +357,17 @@ function pickFor(gameId, playerId){
   return S.data.picks.find(function(p){ return p.game_id === gameId && p.player_id === playerId; });
 }
 
+// Open on the slot that still needs you: unlocked and unfinished, else the first open one.
+function defaultSlot(w, slots){
+  var w1 = slots.filter(function(lg){
+    var req = lg === 'cfb' ? w.cfb_required : w.nfl_required;
+    return !leagueLocked(w, lg) && myPicksFor(lg).length < req;
+  });
+  if (w1.length) return w1[0];
+  var open = slots.filter(function(lg){ return !leagueLocked(w, lg); });
+  return open.length ? open[0] : slots[0];
+}
+
 function lockStrip(week, lg, label){
   var lock = lg === 'cfb' ? week.cfb_lock : week.nfl_lock;
   if (!lock) return '';
@@ -343,14 +380,32 @@ function lockStrip(week, lg, label){
 function renderPicks(){
   var d = S.data, w = d.week, root = el('tab-picks');
   if (!w) { root.innerHTML = '<div class="empty"><span class="big">No week is set up yet</span>' + (d.me.is_commissioner ? 'Head to Admin to create Week 1.' : 'The commissioner hasn’t opened a week yet.') + '</div>'; return; }
+  var slots = [];
+  if (w.cfb_required > 0) slots.push('cfb');
+  if (w.nfl_required > 0) slots.push('nfl');
+  if (!slots.length) {
+    root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '><div class="empty"><span class="big">Bye week</span>Nothing required this week.</div></div>';
+    root._rendered = true; return;
+  }
+  if (slots.indexOf(S.pickLg) < 0) S.pickLg = defaultSlot(w, slots);
   var html = '';
-  [['cfb','cfb_required'],['nfl','nfl_required']].forEach(function(cfg){
-    var lg = cfg[0], label = sportLabel(w, lg), required = w[cfg[1]];
-    if (required <= 0) return;
+  if (slots.length > 1) {
+    html += '<div class="segbar">';
+    slots.forEach(function(sl){
+      var req = sl === 'cfb' ? w.cfb_required : w.nfl_required;
+      var n = myPicksFor(sl).length, done = n >= req;
+      html += '<button class="seg' + (sl === S.pickLg ? ' on' : '') + '" data-lg="' + sl + '">'
+        + '<span class="sl">' + esc(sportLabel(w, sl)) + '</span>'
+        + '<span class="sc' + (done ? ' full' : '') + '">' + n + '/' + req + (done ? ' \u2713' : '') + '</span></button>';
+    });
+    html += '</div>';
+  }
+  [S.pickLg].forEach(function(lg){
+    var label = sportLabel(w, lg), required = lg === 'cfb' ? w.cfb_required : w.nfl_required;
     var games = d.games.filter(function(g){ return g.league === lg; });
     var mine = myPicksFor(lg);
     var full = mine.length >= required;
-    html += '<div class="sechead"><h3>' + label + '</h3><span class="count' + (full ? ' full' : '') + '">' + mine.length + '/' + required + ' picked</span></div>';
+    if (slots.length < 2) html += '<div class="sechead"><h3>' + label + '</h3><span class="count' + (full ? ' full' : '') + '">' + mine.length + '/' + required + ' picked</span></div>';
     html += lockStrip(w, lg, label);
     if (!games.length) {
       html += '<div class="empty">No ' + label + ' games loaded yet' + (d.me.is_commissioner ? ' — load them from Admin.' : '.') + '</div>';
@@ -377,9 +432,17 @@ function renderPicks(){
       html += '</div>';
     });
   });
-  if (w.cfb_required <= 0 && w.nfl_required <= 0) html = '<div class="empty"><span class="big">Bye week</span>Nothing required this week.</div>';
   root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '>' + html + '</div>';
   root._rendered = true;
+
+  root.querySelectorAll('.seg[data-lg]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (S.pickLg === b.getAttribute('data-lg')) return;
+      S.pickLg = b.getAttribute('data-lg');
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
 
   root.querySelectorAll('.side[data-g]').forEach(function(b){
     b.addEventListener('click', function(){
@@ -503,6 +566,34 @@ function renderBoard(){
   });
 }
 
+// Season record broken out by category: college vs NFL, favorites vs dogs, home vs road.
+var SPLIT_DEFS = [['cfb','College'],['nfl','NFL'],['fav','Favorites'],['dog','Underdogs'],['home','Home'],['away','Road']];
+function recLine(r){
+  if (!r) return { txt: '\u2014', cls: 'none' };
+  var w = r.w || 0, l = r.l || 0, p = r.p || 0;
+  if (!(w + l + p)) return { txt: '\u2014', cls: 'none' };
+  return { txt: w + '-' + l + (p ? '-' + p : ''), cls: w > l ? 'up' : (l > w ? 'down' : '') };
+}
+function splitsHtml(d){
+  var any = d.standings.some(function(s){ return s.splits && (s.wins + s.losses + s.pushes) > 0; });
+  if (!any) return '';
+  var html = '<div class="sechead"><h3>By Category</h3></div>'
+    + '<p style="color:#87a794;font-size:12px;line-height:1.5;margin:-2px 0 4px">Where each record actually comes from. <b style="color:var(--gold);font-weight:600">Favorites</b> and <b style="color:var(--gold);font-weight:600">Underdogs</b> count which side of the spread you took; pick\u2019em games sit out of that split.</p>';
+  d.standings.forEach(function(s){
+    var tot = s.wins + s.losses;
+    var pct = tot ? Math.round(1000 * s.wins / tot) / 10 : 0;
+    html += '<div class="splitcard' + (s.player_id === d.me.id ? ' me' : '') + '">'
+      + '<div class="who"><span>' + esc(s.name) + '</span><span class="tot">' + s.wins + '-' + s.losses + (s.pushes ? '-' + s.pushes : '') + (tot ? ' \u00b7 ' + pct + '%' : '') + '</span></div>'
+      + '<div class="cells">';
+    SPLIT_DEFS.forEach(function(def){
+      var r = recLine(s.splits ? s.splits[def[0]] : null);
+      html += '<div class="cell"><div class="k">' + def[1] + '</div><div class="v ' + r.cls + '">' + r.txt + '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  return html;
+}
+
 function renderStandings(){
   var d = S.data, root = el('tab-standings');
   var html = '<div class="sechead"><h3>Season Standings</h3></div>';
@@ -524,6 +615,7 @@ function renderStandings(){
         + '<td class="r mono">' + (s.egg_hits || 0) + '</td><td class="r mono">' + (s.egg_received || 0) + '</td></tr>';
     });
     html += '</table>';
+    html += splitsHtml(d);
     html += '<p style="color:#87a794;font-size:12px;line-height:1.5">🍆✓ = worst-pick calls that lost — one per player caught, since a 🍆 covers everyone on the same bet · 🍆 = times one of your picks was covered by a flag. Each player gets one 🍆 per week, placed after reveal.</p>';
   }
   root.innerHTML = '<div class="fade">' + html + '</div>';
