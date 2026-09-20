@@ -91,6 +91,9 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .rk{display:inline-block;font-family:'Spline Sans Mono';font-size:10px;font-weight:700;
   background:var(--felt);color:var(--gold);border-radius:3px;padding:1px 4px;margin-right:5px;vertical-align:1px}
 .side.mine .rk{background:var(--gold);color:var(--felt)}
+.mv{display:block;font-family:'Spline Sans Mono';font-size:10px;font-weight:700;
+  letter-spacing:.06em;color:#9a7b2f;margin-top:2px}
+.side.mine .mv{color:#b99243}
 
 /* ---------- standings splits ---------- */
 .splitcard{background:var(--felt2);border:1px solid var(--line);border-radius:7px;padding:10px 12px 12px;margin:9px 0}
@@ -429,7 +432,7 @@ function renderPicks(){
     }
     var locked = leagueLocked(w, lg);
     if (!locked) {
-      html += '<p class="linenote">📌 Lines shown are <b>live</b> and can move until lock. Every pick pays out at <b>whatever the line is at lock time</b> — not the line when you tapped it. Games marked TBD don’t have a posted line yet; they open up for picking once one lands.</p>';
+      html += '<p class="linenote">📌 Lines shown are <b>live</b> and can move until lock. Every pick pays out at <b>whatever the line is at lock time</b> — not the line when you tapped it. Games marked TBD don’t have a posted line yet; they open up for picking once one lands. A <b>\u25b2</b> under a team shows the line has moved that way since it opened.</p>';
     }
     var groups = groupedGames(games, lg);
     if (groups) groups.forEach(function(grp){ html += groupHtml(grp, locked); });
@@ -484,6 +487,23 @@ function apRank(team){
 function rankBadge(team){
   var r = apRank(team);
   return r ? '<span class="rk">' + r + '</span>' : '';
+}
+
+// Line movement, measured against the first number we ever recorded for the game.
+// A negative delta on the home spread means the line moved toward the home team.
+function lineMove(g){
+  if (g.spread_home === null || g.spread_home === undefined) return null;
+  if (g.open_spread_home === null || g.open_spread_home === undefined) return null;
+  var delta = Number(g.spread_home) - Number(g.open_spread_home);
+  if (!delta || Math.abs(delta) < 0.5) return null;
+  return { toward: delta < 0 ? 'home' : 'away', points: Math.abs(delta), open: Number(g.open_spread_home) };
+}
+function moveNote(g, side){
+  var mv = lineMove(g);
+  if (!mv || mv.toward !== side) return '';
+  var openForSide = side === 'home' ? mv.open : -mv.open;
+  return '<span class="mv" title="Opened at ' + fmtSpread(openForSide) + '">\u25b2 '
+    + (mv.points % 1 === 0 ? mv.points : mv.points.toFixed(1)) + ' from ' + fmtSpread(openForSide) + '</span>';
 }
 
 function ticketHtml(g, locked){
@@ -545,7 +565,8 @@ function sideBtn(g, side, team, spread, isFav, myPick, frozen){
     ? fmtSpread(side === 'home' ? myPick.spread_home_at_pick : -Number(myPick.spread_home_at_pick)) : spread;
   return '<div class="' + cls + '"' + (frozen ? '' : ' data-g="' + g.id + '" data-s="' + side + '"') + '>'
     + '<div class="tm">' + rankBadge(team) + esc(team) + '</div>'
-    + '<div class="sp' + (isFav ? ' fav' : '') + '">' + (mine ? lockedSp : spread) + '</div>' + stamp + '</div>';
+    + '<div class="sp' + (isFav ? ' fav' : '') + '">' + (mine ? lockedSp : spread) + '</div>'
+    + moveNote(g, side) + stamp + '</div>';
 }
 
 function renderBoard(){
