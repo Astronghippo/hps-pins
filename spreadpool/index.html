@@ -76,6 +76,22 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .seg .sc.full{color:var(--win);filter:brightness(1.7)}
 .seg.on .sc.full{color:var(--felt);filter:none}
 
+/* ---------- collapsible game groups ---------- */
+.grouphead{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--felt2);border:1px solid var(--line);border-radius:6px;padding:11px 13px;margin:12px 0 0;
+  color:var(--paper);cursor:pointer;text-align:left;font-family:'Barlow'}
+.grouphead .gt{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.07em;text-transform:uppercase}
+.grouphead .gn{font-family:'Spline Sans Mono';font-size:11px;font-weight:700;color:#87a794;letter-spacing:.1em;margin-left:9px}
+.grouphead .gn.has{color:var(--gold)}
+.grouphead .gc{font-size:13px;color:var(--gold);transition:transform .18s;flex:none}
+.grouphead.open{border-color:var(--gold2)}
+.grouphead.open .gc{transform:rotate(180deg)}
+.groupbody{padding-top:2px}
+.groupbody.shut{display:none}
+.rk{display:inline-block;font-family:'Spline Sans Mono';font-size:10px;font-weight:700;
+  background:var(--felt);color:var(--gold);border-radius:3px;padding:1px 4px;margin-right:5px;vertical-align:1px}
+.side.mine .rk{background:var(--gold);color:var(--felt)}
+
 /* ---------- standings splits ---------- */
 .splitcard{background:var(--felt2);border:1px solid var(--line);border-radius:7px;padding:10px 12px 12px;margin:9px 0}
 .splitcard.me{border-color:var(--gold2);background:rgba(217,164,65,.07)}
@@ -240,7 +256,7 @@ tr.me td{background:rgba(217,164,65,.07)}
 (function(){
 "use strict";
 var BASE = 'https://ufdfznoerzesjpkagsbt.supabase.co/functions/v1/spreadpool';
-var S = { token: localStorage.getItem('sp_token') || '', data: null, tab: 'picks', weekId: null, clockSkew: 0, pickLg: null };
+var S = { token: localStorage.getItem('sp_token') || '', data: null, tab: 'picks', weekId: null, clockSkew: 0, pickLg: null, groupOpen: {} };
 
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -415,25 +431,22 @@ function renderPicks(){
     if (!locked) {
       html += '<p class="linenote">📌 Lines shown are <b>live</b> and can move until lock. Every pick pays out at <b>whatever the line is at lock time</b> — not the line when you tapped it. Games marked TBD don’t have a posted line yet; they open up for picking once one lands.</p>';
     }
-    games.forEach(function(g){
-      var started = new Date(g.commence_time).getTime() <= now();
-      var noLine = g.spread_home === null || g.spread_home === undefined;
-      var frozen = locked || started || noLine;
-      var mp = pickFor(g.id, d.me.id);
-      var sp = Number(g.spread_home);
-      var homeSp = fmtSpread(g.spread_home), awaySp = fmtSpread(g.spread_home === null ? null : -sp);
-      html += '<div class="ticket' + (frozen ? ' locked' : '') + '" >'
-        + '<div class="meta"><span>' + esc(fmtTime(g.commence_time)) + '</span><span>' + (noLine ? 'LINE TBD' : esc((g.bookmaker || '').toUpperCase()) + ' LINE') + '</span></div>'
-        + '<div class="sides">'
-        + sideBtn(g, 'away', g.away_team, awaySp, sp > 0, mp, frozen)
-        + sideBtn(g, 'home', g.home_team, homeSp, sp < 0, mp, frozen)
-        + '</div>';
-      if (g.completed) html += '<div class="score">FINAL: <b>' + esc(g.away_team) + ' ' + g.away_score + '</b> — <b>' + esc(g.home_team) + ' ' + g.home_score + '</b></div>';
-      html += '</div>';
-    });
+    var groups = groupedGames(games, lg);
+    if (groups) groups.forEach(function(grp){ html += groupHtml(grp, locked); });
+    else games.forEach(function(g){ html += ticketHtml(g, locked); });
   });
   root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '>' + html + '</div>';
   root._rendered = true;
+
+  root.querySelectorAll('.grouphead[data-grp]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var k = b.getAttribute('data-grp');
+      var body = b.nextElementSibling;
+      var nowOpen = b.classList.toggle('open');
+      S.groupOpen[k] = nowOpen;
+      if (body) body.classList.toggle('shut', !nowOpen);
+    });
+  });
 
   root.querySelectorAll('.seg[data-lg]').forEach(function(b){
     b.addEventListener('click', function(){
@@ -463,6 +476,66 @@ function renderPicks(){
   });
 }
 
+// AP Top 25 rank for a team name, or null. ESPN and The Odds API agree on full team names.
+function apRank(team){
+  var ap = S.data && S.data.apRanks;
+  return (ap && ap[team]) || null;
+}
+function rankBadge(team){
+  var r = apRank(team);
+  return r ? '<span class="rk">' + r + '</span>' : '';
+}
+
+function ticketHtml(g, locked){
+  var d = S.data;
+  var started = new Date(g.commence_time).getTime() <= now();
+  var noLine = g.spread_home === null || g.spread_home === undefined;
+  var frozen = locked || started || noLine;
+  var mp = pickFor(g.id, d.me.id);
+  var sp = Number(g.spread_home);
+  var homeSp = fmtSpread(g.spread_home), awaySp = fmtSpread(g.spread_home === null ? null : -sp);
+  var html = '<div class="ticket' + (frozen ? ' locked' : '') + '">'
+    + '<div class="meta"><span>' + esc(fmtTime(g.commence_time)) + '</span><span>' + (noLine ? 'LINE TBD' : esc((g.bookmaker || '').toUpperCase()) + ' LINE') + '</span></div>'
+    + '<div class="sides">'
+    + sideBtn(g, 'away', g.away_team, awaySp, sp > 0, mp, frozen)
+    + sideBtn(g, 'home', g.home_team, homeSp, sp < 0, mp, frozen)
+    + '</div>';
+  if (g.completed) html += '<div class="score">FINAL: <b>' + esc(g.away_team) + ' ' + g.away_score + '</b> \u2014 <b>' + esc(g.home_team) + ' ' + g.home_score + '</b></div>';
+  return html + '</div>';
+}
+
+// A college slate runs to 70+ games, so split it: anything with an AP Top 25 team on the
+// field, then everything else. Each side collapses; a group holding one of your picks
+// always opens.
+function groupedGames(games, lg){
+  var ap = S.data.apRanks;
+  if (lg !== 'cfb' || !ap || games.length < 12) return null;
+  var top = [], rest = [];
+  games.forEach(function(g){
+    (apRank(g.home_team) || apRank(g.away_team) ? top : rest).push(g);
+  });
+  if (!top.length || !rest.length) return null;
+  return [
+    { key: 'top25', label: 'AP Top 25', games: top },
+    { key: 'rest', label: 'Everything Else', games: rest }
+  ];
+}
+
+function groupHtml(grp, locked){
+  var d = S.data;
+  var mine = grp.games.filter(function(g){ return !!pickFor(g.id, d.me.id); }).length;
+  var open = S.groupOpen[grp.key];
+  if (open === undefined) open = grp.key === 'top25' || mine > 0;
+  var count = grp.games.length + ' game' + (grp.games.length === 1 ? '' : 's')
+    + (mine ? ' \u00b7 ' + mine + ' picked' : '');
+  var html = '<button class="grouphead' + (open ? ' open' : '') + '" data-grp="' + grp.key + '">'
+    + '<span><span class="gt">' + esc(grp.label) + '</span><span class="gn' + (mine ? ' has' : '') + '">' + count + '</span></span>'
+    + '<span class="gc">\u25be</span></button>'
+    + '<div class="groupbody' + (open ? '' : ' shut') + '">';
+  grp.games.forEach(function(g){ html += ticketHtml(g, locked); });
+  return html + '</div>';
+}
+
 function sideBtn(g, side, team, spread, isFav, myPick, frozen){
   var mine = myPick && myPick.side === side;
   var cls = 'side' + (mine ? ' mine' : '') + (frozen ? ' dead' : '');
@@ -471,7 +544,7 @@ function sideBtn(g, side, team, spread, isFav, myPick, frozen){
   var lockedSp = mine && myPick.spread_home_at_pick !== null && myPick.spread_home_at_pick !== undefined
     ? fmtSpread(side === 'home' ? myPick.spread_home_at_pick : -Number(myPick.spread_home_at_pick)) : spread;
   return '<div class="' + cls + '"' + (frozen ? '' : ' data-g="' + g.id + '" data-s="' + side + '"') + '>'
-    + '<div class="tm">' + esc(team) + '</div>'
+    + '<div class="tm">' + rankBadge(team) + esc(team) + '</div>'
     + '<div class="sp' + (isFav ? ' fav' : '') + '">' + (mine ? lockedSp : spread) + '</div>' + stamp + '</div>';
 }
 
