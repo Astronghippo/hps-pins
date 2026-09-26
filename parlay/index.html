@@ -119,6 +119,10 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .gamerow.on{background:var(--felt2);color:var(--paper)}
 .gamerow .t{font-weight:700;line-height:1.2}
 .gamerow .k{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.1em;color:var(--ink2);flex:none}
+.gamerow .when{display:block;font-family:'Spline Sans Mono';font-size:10.5px;letter-spacing:.04em;color:var(--ink2);margin-top:2px;font-weight:500}
+.gamerow.on .when{color:#87a794}
+.daybreak{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2);
+  background:#efe5cd;padding:6px 11px;border-bottom:1px solid #e6dcc2;font-weight:700}
 .gamerow.on .k{color:#87a794}
 .gamerow.dead{opacity:.45;cursor:not-allowed}
 .mkt{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}
@@ -233,6 +237,13 @@ function fmtNum(n){ var v = Number(n); return (v > 0 ? '+' : '') + (v % 1 === 0 
 function fmtTime(iso){
   return new Intl.DateTimeFormat(undefined, { weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
 }
+function fmtKick(iso){
+  return new Intl.DateTimeFormat(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
+}
+function fmtDay(iso){
+  return new Intl.DateTimeFormat(undefined, { weekday:'long', month:'short', day:'numeric' }).format(new Date(iso));
+}
+
 function toLocalInput(iso){
   if (!iso) return '';
   var d = new Date(iso), p = function(n){ return ('0'+n).slice(-2); };
@@ -389,14 +400,18 @@ function builderHtml(){
   var html = '<div class="builder"><h4>Build your leg</h4>'
     + '<p class="hint">Pick the game, then what you want. Spread and total pull the live number and price; a TD scorer is a name.</p>';
   html += '<div class="gamelist">';
+  var lastDay = '';
   (d.games || []).forEach(function(g){
     var dead = started(g);
+    var day = fmtDay(g.commence_time);
+    if (day !== lastDay) { html += '<div class="daybreak">' + esc(day) + '</div>'; lastDay = day; }
     var line = g.spread_home === null || g.spread_home === undefined ? '' : (g.home_team.split(' ').pop() + ' ' + fmtNum(g.spread_home));
     var tot = g.total_points === null || g.total_points === undefined ? '' : ' · O/U ' + g.total_points;
     html += '<div class="gamerow' + (b.game_id === g.id ? ' on' : '') + (dead ? ' dead' : '') + '"'
       + (dead ? '' : ' data-game="' + g.id + '"') + '>'
-      + '<span class="t">' + esc(g.away_team) + ' @ ' + esc(g.home_team) + '</span>'
-      + '<span class="k">' + esc(dead ? 'STARTED' : (line + tot)) + '</span></div>';
+      + '<span class="t">' + esc(g.away_team) + ' @ ' + esc(g.home_team)
+      + '<span class="when">' + esc(dead ? 'already started' : fmtKick(g.commence_time)) + '</span></span>'
+      + '<span class="k">' + esc(line + tot) + '</span></div>';
   });
   html += '</div>';
 
