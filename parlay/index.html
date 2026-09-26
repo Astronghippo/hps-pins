@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loser's Parlay</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#0a1f14; --felt2:#0e2a1b; --line:#1d4230;
+  --paper:#f4eddc; --paper2:#efe5cd; --ink:#20241f; --ink2:#6b6a5c;
+  --gold:#d9a441; --gold2:#b8862e;
+  --red:#c0392b; --win:#2e7d4f; --push:#8a7f4e;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Barlow',sans-serif;color:var(--paper);background:var(--felt);
+  background-image:
+    radial-gradient(1200px 500px at 50% -10%, rgba(217,164,65,.10), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 6px);
+  min-height:100vh;padding-bottom:90px;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+header{padding:18px 0 10px;text-align:center}
+.wordmark{font-family:'Big Shoulders Display';font-weight:800;font-size:clamp(32px,8.5vw,50px);
+  letter-spacing:.04em;line-height:.9;color:var(--paper);text-transform:uppercase}
+.wordmark span{color:var(--gold)}
+.tagline{font-family:'Spline Sans Mono';font-size:11px;letter-spacing:.3em;color:var(--gold);
+  text-transform:uppercase;margin-top:6px;opacity:.85}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:14px auto 0;max-width:420px;opacity:.5}
+
+.login-card{background:var(--paper);color:var(--ink);border-radius:6px;margin:26px auto;max-width:420px;
+  padding:26px 22px 22px;box-shadow:var(--shadow);position:relative}
+.login-card:before,.login-card:after{content:"";position:absolute;left:0;right:0;height:8px;
+  background-image:radial-gradient(circle at 6px 4px, var(--felt) 4px, transparent 4.5px);background-size:16px 8px}
+.login-card:before{top:-4px}.login-card:after{bottom:-4px;transform:scaleY(-1)}
+.login-card h2{font-family:'Big Shoulders Display';font-weight:800;font-size:26px;text-transform:uppercase;letter-spacing:.03em}
+.login-card p{font-size:13.5px;color:var(--ink2);margin:6px 0 16px;line-height:1.45}
+label{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink2);margin:12px 0 5px}
+input,select,textarea{width:100%;font-family:'Barlow';font-size:16px;font-weight:600;color:var(--ink);
+  background:#fff;border:1.5px solid #cfc4a6;border-radius:4px;padding:11px 12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold2)}
+.btn{display:inline-block;width:100%;margin-top:18px;font-family:'Big Shoulders Display';font-weight:800;
+  font-size:19px;letter-spacing:.08em;text-transform:uppercase;color:var(--felt);
+  background:linear-gradient(180deg,var(--gold),var(--gold2));border:none;border-radius:4px;
+  padding:13px;cursor:pointer;transition:transform .08s}
+.btn:active{transform:scale(.98)}
+.btn.small{width:auto;font-size:15px;padding:9px 16px;margin-top:0}
+.btn.ghost{background:transparent;color:var(--gold);border:1.5px solid var(--gold2)}
+.btn.danger{background:linear-gradient(180deg,#d05545,#a63527);color:#fff}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:rgba(8,22,14,.96);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
+nav button{flex:1;max-width:160px;background:none;border:none;color:#87a794;cursor:pointer;
+  font-family:'Big Shoulders Display';font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;padding:10px 4px;border-radius:6px}
+nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),var(--gold2))}
+
+.weekbar{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+.weekbar select{flex:1;background:var(--felt2);color:var(--paper);border:1px solid var(--line);font-weight:700}
+.userchip{font-family:'Spline Sans Mono';font-size:11px;color:var(--gold);letter-spacing:.08em;white-space:nowrap;cursor:pointer}
+
+/* ---------- the slip ---------- */
+.hero{border-radius:8px;padding:16px 16px 14px;margin:14px 0 10px;border:1px solid var(--line);background:var(--felt2);text-align:center}
+.hero.alive{border-color:var(--gold2)}
+.hero.busted{border-color:#7e3229;background:linear-gradient(180deg,rgba(192,57,43,.14),var(--felt2))}
+.hero.hit{border-color:#2e7d4f;background:linear-gradient(180deg,rgba(46,125,79,.16),var(--felt2))}
+.hero .state{font-family:'Big Shoulders Display';font-weight:800;font-size:clamp(30px,9vw,44px);letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.hero.alive .state{color:var(--gold)}
+.hero.busted .state{color:#e0705f}
+.hero.hit .state{color:#5bc98a}
+.hero .sub{font-family:'Spline Sans Mono';font-size:12px;letter-spacing:.12em;color:#87a794;margin-top:7px}
+.hero .money{font-family:'Spline Sans Mono';font-weight:700;font-size:20px;color:var(--paper);margin-top:9px}
+.hero .money b{color:var(--gold)}
+.sponsor{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--felt2);
+  border:1px solid var(--line);border-radius:6px;padding:10px 13px;margin:0 0 10px;font-size:13.5px}
+.sponsor .who{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
+.placed{background:rgba(217,164,65,.12);border:1px solid var(--gold2);border-radius:6px;padding:9px 13px;margin:0 0 10px;
+  font-size:12.5px;color:var(--paper);line-height:1.5}
+.note{font-size:12.5px;color:#87a794;line-height:1.5;margin:0 0 10px;padding:0 2px}
+.note b{color:var(--gold);font-weight:600}
+
+.sechead{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 8px}
+.sechead h3{font-family:'Big Shoulders Display';font-weight:800;font-size:23px;letter-spacing:.06em;text-transform:uppercase}
+.sechead .count{font-family:'Spline Sans Mono';font-size:13px;font-weight:700;color:var(--gold)}
+
+/* ---------- legs ---------- */
+.leg{display:flex;align-items:center;gap:10px;background:var(--felt2);border:1px solid var(--line);
+  border-radius:6px;padding:10px 12px;margin:7px 0}
+.leg.mine{border-color:var(--gold2);background:rgba(217,164,65,.07)}
+.leg.win{border-left:4px solid var(--win)}
+.leg.loss{border-left:4px solid var(--red);opacity:.85}
+.leg.push{border-left:4px solid var(--push)}
+.leg .who{font-family:'Big Shoulders Display';font-weight:800;font-size:17px;letter-spacing:.04em;
+  text-transform:uppercase;width:74px;flex:none;color:var(--paper)}
+.leg .bet{flex:1;min-width:0}
+.leg .bet .pick{font-weight:700;font-size:14.5px;line-height:1.2}
+.leg .bet .meta{font-size:11.5px;color:#87a794;margin-top:2px}
+.leg .odds{font-family:'Spline Sans Mono';font-weight:700;font-size:13px;color:var(--gold);flex:none}
+.leg .pill{font-family:'Spline Sans Mono';font-weight:700;font-size:10px;letter-spacing:.1em;
+  padding:3px 7px;border-radius:3px;flex:none}
+.pill.win{background:var(--win);color:#eafff2}.pill.loss{background:var(--red);color:#ffecec}
+.pill.push{background:var(--push);color:#fffbe0}.pill.pending{background:#22483385;color:#87a794}
+.leg.empty{border-style:dashed;opacity:.65}
+.leg.empty .bet .pick{font-weight:500;color:#87a794;font-style:italic}
+
+/* ---------- bet builder ---------- */
+.builder{background:var(--paper);color:var(--ink);border-radius:6px;padding:14px;margin:10px 0;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.builder h4{font-family:'Big Shoulders Display';font-weight:800;font-size:20px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px}
+.builder p.hint{font-size:12.5px;color:var(--ink2);margin-bottom:10px;line-height:1.4}
+.gamelist{max-height:280px;overflow-y:auto;border:1px solid #d8ccab;border-radius:4px;background:#fbf7ec}
+.gamerow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid #e6dcc2;cursor:pointer;font-size:14px}
+.gamerow:last-child{border-bottom:none}
+.gamerow:hover{background:#f3ecd9}
+.gamerow.on{background:var(--felt2);color:var(--paper)}
+.gamerow .t{font-weight:700;line-height:1.2}
+.gamerow .k{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.1em;color:var(--ink2);flex:none}
+.gamerow.on .k{color:#87a794}
+.gamerow.dead{opacity:.45;cursor:not-allowed}
+.mkt{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}
+.mkt button{font-family:'Big Shoulders Display';font-weight:800;font-size:15px;letter-spacing:.05em;text-transform:uppercase;
+  padding:10px 4px;border:1.5px solid #cfc4a6;background:#fbf7ec;color:var(--ink);border-radius:4px;cursor:pointer}
+.mkt button.on{background:var(--felt2);color:var(--gold);border-color:var(--gold2)}
+.picks2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.picks2 button{font-family:'Barlow';font-weight:700;font-size:14.5px;padding:11px 8px;border:1.5px solid #cfc4a6;
+  background:#fbf7ec;color:var(--ink);border-radius:4px;cursor:pointer;text-align:left;line-height:1.25}
+.picks2 button .n{display:block;font-family:'Spline Sans Mono';font-size:16px;margin-top:3px}
+.picks2 button.on{background:var(--felt2);color:var(--paper);border-color:var(--gold2)}
+.picks2 button.on .n{color:var(--gold)}
+
+/* ---------- history ---------- */
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#87a794;text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:11px 8px;border-bottom:1px solid rgba(29,66,48,.6);font-size:14.5px}
+td.mono,th.r{font-family:'Spline Sans Mono';font-weight:700}
+th.r,td.r{text-align:right}
+
+.adm{background:var(--felt2);border:1px solid var(--line);border-radius:6px;padding:16px;margin:12px 0}
+.adm h4{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;color:var(--gold)}
+.adm p.hint{font-size:12.5px;color:#87a794;margin-bottom:10px;line-height:1.4}
+.adm input,.adm select,.adm textarea{background:#0a1c12;color:var(--paper);border-color:var(--line)}
+.adm label{color:#87a794}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pillrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed rgba(244,237,220,.12);font-size:14px}
+.pillrow .a{display:flex;gap:6px;flex:none}
+.pillrow button{background:none;border:1px solid var(--line);color:#87a794;border-radius:4px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:'Spline Sans Mono'}
+.pillrow button.on{border-color:var(--gold2);color:var(--gold)}
+
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--paper);color:var(--ink);
+  font-weight:600;font-size:14px;padding:11px 18px;border-radius:6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:all .25s;z-index:60;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:var(--red);color:#fff}
+.empty{text-align:center;color:#87a794;padding:30px 10px;font-size:14.5px;line-height:1.5}
+.empty .big{font-family:'Big Shoulders Display';font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:var(--paper);display:block;margin-bottom:6px}
+.fade{animation:fadeup .35s ease both}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark"><span>Loser&#8217;s</span> Parlay</div>
+    <div class="tagline">One slip · Twelve legs · Somebody pays</div>
+    <div class="rule"></div>
+  </header>
+
+  <div id="view-login" class="hide">
+    <div class="login-card fade">
+      <h2>Sign In</h2>
+      <p>Use your name from the league. First time in, the PIN you type becomes yours.</p>
+      <label>Name</label>
+      <input id="li-name" autocomplete="username" placeholder="e.g. Alex">
+      <label>PIN (4+ digits)</label>
+      <input id="li-pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••">
+      <button class="btn" id="li-go">Get me in</button>
+    </div>
+  </div>
+
+  <div id="view-app" class="hide">
+    <div class="weekbar">
+      <select id="weeksel"></select>
+      <span class="userchip" id="userchip" title="Sign out"></span>
+    </div>
+    <div id="tab-card"></div>
+    <div id="tab-history" class="hide"></div>
+    <div id="tab-admin" class="hide"></div>
+  </div>
+</div>
+
+<nav id="nav" class="hide">
+  <button data-tab="card" class="on">The Slip</button>
+  <button data-tab="history">History</button>
+  <button data-tab="admin" id="nav-admin" class="hide">Admin</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var BASE = 'https://ufdfznoerzesjpkagsbt.supabase.co/functions/v1/parlay';
+var S = { token: localStorage.getItem('lp_token') || '', data: null, tab: 'card', weekId: null, clockSkew: 0,
+          build: null };  // build = { open, game_id, market, selection, player_name, price }
+
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function toast(msg, bad){ var t = el('toast'); t.textContent = msg; t.className = bad ? 'show bad' : 'show';
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.className=''; }, 2800); }
+function now(){ return Date.now() + S.clockSkew; }
+
+function api(path, body){
+  var opts = { method: body ? 'POST' : 'GET', headers: {} };
+  if (S.token) opts.headers['Authorization'] = 'Bearer ' + S.token;
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  return fetch(BASE + path, opts).then(function(r){
+    return r.json().then(function(j){ if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; });
+  });
+}
+
+function money(cents){
+  if (cents === null || cents === undefined) return null;
+  var d = cents / 100;
+  var s = d >= 1000 ? Math.round(d).toLocaleString('en-US') : d.toFixed(2);
+  return '$' + s;
+}
+function odds(n){ if (n === null || n === undefined) return '—'; return (n > 0 ? '+' : '') + n; }
+function fmtNum(n){ var v = Number(n); return (v > 0 ? '+' : '') + (v % 1 === 0 ? v : v.toFixed(1)); }
+function fmtTime(iso){
+  return new Intl.DateTimeFormat(undefined, { weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
+}
+function toLocalInput(iso){
+  if (!iso) return '';
+  var d = new Date(iso), p = function(n){ return ('0'+n).slice(-2); };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function toIso(v){ return v ? new Date(v).toISOString() : null; }
+
+function gameById(id){ return (S.data.games || []).find(function(g){ return g.id === id; }); }
+function playerName(id){ var p = S.data.players.find(function(x){ return x.id === id; }); return p ? p.name : '?'; }
+function myLeg(){ return (S.data.legs || []).find(function(l){ return l.player_id === S.data.me.id; }); }
+function started(g){ return new Date(g.commence_time).getTime() <= now(); }
+function cardFrozen(){ return !!(S.data.week && S.data.week.placed_at); }
+
+// One leg rendered as a sentence: "Bengals -3.5", "OVER 42.5", "Kelce anytime TD".
+function legText(l){
+  var g = gameById(l.game_id);
+  if (!g) return { pick: 'Unknown game', meta: '' };
+  var matchup = g.away_team + ' @ ' + g.home_team;
+  if (l.market === 'spread') {
+    var team = l.selection === 'home' ? g.home_team : g.away_team;
+    return { pick: team + ' ' + fmtNum(l.line), meta: matchup + ' · ' + fmtTime(g.commence_time) };
+  }
+  if (l.market === 'total') {
+    return { pick: l.selection.toUpperCase() + ' ' + Number(l.line), meta: matchup + ' · ' + fmtTime(g.commence_time) };
+  }
+  return { pick: l.player_name + ' — anytime TD', meta: matchup + ' · ' + fmtTime(g.commence_time) };
+}
+
+// ---------- data ----------
+function load(){
+  var q = S.weekId ? ('?week_id=' + S.weekId) : '';
+  return api('/api/bootstrap' + q).then(function(d){
+    S.data = d;
+    S.clockSkew = new Date(d.now).getTime() - Date.now();
+    if (d.week) S.weekId = d.week.id;
+    render();
+  }).catch(function(e){
+    if (String(e.message).indexOf('Not signed in') >= 0) { S.token=''; localStorage.removeItem('lp_token'); render(); }
+    else toast(e.message, true);
+  });
+}
+
+// ---------- render ----------
+function render(){
+  var authed = !!(S.token && S.data);
+  el('view-login').classList.toggle('hide', authed);
+  el('view-app').classList.toggle('hide', !authed);
+  el('nav').classList.toggle('hide', !authed);
+  if (!authed) return;
+  var d = S.data;
+  el('nav-admin').classList.toggle('hide', !d.me.is_commissioner);
+  el('userchip').textContent = d.me.name + ' ↩';
+  renderWeekSel();
+  ['card','history','admin'].forEach(function(t){ el('tab-' + t).classList.toggle('hide', S.tab !== t); });
+  if (S.tab === 'card') renderCard();
+  if (S.tab === 'history') renderHistory();
+  if (S.tab === 'admin') renderAdmin();
+}
+
+function renderWeekSel(){
+  var d = S.data, sel = el('weeksel'), html = '';
+  if (!d.weeks.length) { sel.innerHTML = '<option>No weeks yet</option>'; return; }
+  d.weeks.forEach(function(w){
+    html += '<option value="' + w.id + '"' + (d.week && w.id === d.week.id ? ' selected' : '') + '>'
+      + esc(w.label || ('Week ' + w.week_no)) + ' · ' + w.season + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function renderCard(){
+  var d = S.data, w = d.week, root = el('tab-card');
+  if (!w) {
+    root.innerHTML = '<div class="empty"><span class="big">No week open yet</span>'
+      + (d.me.is_commissioner ? 'Open one from the Admin tab.' : 'Alex hasn’t opened this week yet.') + '</div>';
+    return;
+  }
+  var c = d.card || { state: 'empty', legs: 0, won: 0, lost: 0, pending: 0, pushes: 0, payout_cents: null, busted_by: [], missing_price: 0 };
+  var html = '';
+
+  // status hero
+  var titles = { alive: 'Still Alive', busted: 'Busted', hit: 'It Hit', empty: 'No Legs Yet' };
+  var subs = {
+    alive: c.won + ' won · ' + c.pending + ' to play' + (c.pushes ? ' · ' + c.pushes + ' pushed' : ''),
+    busted: 'Killed by ' + c.busted_by.map(playerName).join(', '),
+    hit: 'All ' + c.won + ' legs cashed' + (c.pushes ? ' · ' + c.pushes + ' pushed out' : ''),
+    empty: 'Waiting on the league'
+  };
+  html += '<div class="hero ' + c.state + '"><div class="state">' + titles[c.state] + '</div>'
+    + '<div class="sub">' + esc(subs[c.state]) + '</div>';
+  if (c.payout_cents) {
+    html += '<div class="money">' + money(w.stake_cents) + ' returns <b>' + money(c.payout_cents) + '</b></div>';
+  } else if (c.missing_price) {
+    html += '<div class="money" style="font-size:13px;color:#87a794">Payout needs odds on ' + c.missing_price + ' leg' + (c.missing_price === 1 ? '' : 's') + '</div>';
+  }
+  html += '</div>';
+
+  // sponsor + placed state
+  html += '<div class="sponsor"><span>Sponsored by</span><span class="who">'
+    + (w.sponsor_id ? esc(playerName(w.sponsor_id)) : 'not set') + '</span><span>' + money(w.stake_cents) + '</span></div>';
+  if (w.placed_at) {
+    html += '<div class="placed">🎟️ <b>Slip is down.</b> Placed ' + esc(fmtTime(w.placed_at)) + ' — legs are locked in as they stand.</div>';
+  } else {
+    html += '<p class="note">Everyone can see the card as it fills up, so check what’s already on it before you add yours. You can change your leg until your game kicks off, or until Alex places the slip.</p>';
+  }
+
+  // your leg
+  var mine = myLeg();
+  html += '<div class="sechead"><h3>Your Leg</h3></div>';
+  if (mine) {
+    var t = legText(mine);
+    html += '<div class="leg mine' + (mine.result ? ' ' + mine.result : '') + '">'
+      + '<div class="who">You</div><div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div></div>'
+      + '<div class="odds">' + odds(mine.price) + '</div>'
+      + '<div class="pill ' + (mine.result || 'pending') + '">' + (mine.result || 'pending').toUpperCase() + '</div></div>';
+    if (!cardFrozen() && !mine.result) {
+      html += '<div class="btnrow"><button class="btn small ghost" id="leg-change">Change it</button>'
+        + '<button class="btn small danger" id="leg-drop">Remove</button></div>';
+    }
+  } else if (cardFrozen()) {
+    html += '<div class="empty">You didn’t get a leg in before the slip went down.</div>';
+  } else {
+    html += '<div class="leg empty"><div class="who">You</div><div class="bet"><div class="pick">nothing yet</div></div></div>'
+      + '<div class="btnrow"><button class="btn small" id="leg-add">Add your leg</button></div>';
+  }
+  if (S.build && S.build.open) html += builderHtml();
+
+  // the whole card
+  html += '<div class="sechead"><h3>The Card</h3><span class="count">' + c.legs + '/' + d.players.length + ' in</span></div>';
+  var byPlayer = {};
+  (d.legs || []).forEach(function(l){ byPlayer[l.player_id] = l; });
+  d.players.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }).forEach(function(p){
+    var l = byPlayer[p.id];
+    if (!l) {
+      html += '<div class="leg empty"><div class="who">' + esc(p.name) + '</div>'
+        + '<div class="bet"><div class="pick">no leg in yet</div></div></div>';
+      return;
+    }
+    var t = legText(l);
+    html += '<div class="leg' + (p.id === d.me.id ? ' mine' : '') + (l.result ? ' ' + l.result : '') + '">'
+      + '<div class="who">' + esc(p.name) + '</div>'
+      + '<div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div></div>'
+      + '<div class="odds">' + odds(l.price) + '</div>'
+      + '<div class="pill ' + (l.result || 'pending') + '">' + (l.result || 'pending').toUpperCase() + '</div></div>';
+  });
+
+  root.innerHTML = '<div' + (root._rendered ? '' : ' class="fade"') + '>' + html + '</div>';
+  root._rendered = true;
+  wireCard();
+}
+
+// ---------- bet builder ----------
+function builderHtml(){
+  var d = S.data, b = S.build;
+  var html = '<div class="builder"><h4>Build your leg</h4>'
+    + '<p class="hint">Pick the game, then what you want. Spread and total pull the live number and price; a TD scorer is a name.</p>';
+  html += '<div class="gamelist">';
+  (d.games || []).forEach(function(g){
+    var dead = started(g);
+    var line = g.spread_home === null || g.spread_home === undefined ? '' : (g.home_team.split(' ').pop() + ' ' + fmtNum(g.spread_home));
+    var tot = g.total_points === null || g.total_points === undefined ? '' : ' · O/U ' + g.total_points;
+    html += '<div class="gamerow' + (b.game_id === g.id ? ' on' : '') + (dead ? ' dead' : '') + '"'
+      + (dead ? '' : ' data-game="' + g.id + '"') + '>'
+      + '<span class="t">' + esc(g.away_team) + ' @ ' + esc(g.home_team) + '</span>'
+      + '<span class="k">' + esc(dead ? 'STARTED' : (line + tot)) + '</span></div>';
+  });
+  html += '</div>';
+
+  if (b.game_id) {
+    var g = gameById(b.game_id);
+    html += '<div class="mkt">'
+      + '<button data-mkt="spread" class="' + (b.market === 'spread' ? 'on' : '') + '">Spread</button>'
+      + '<button data-mkt="total" class="' + (b.market === 'total' ? 'on' : '') + '">Over / Under</button>'
+      + '<button data-mkt="td" class="' + (b.market === 'td' ? 'on' : '') + '">TD Scorer</button>'
+      + '</div>';
+    if (b.market === 'spread' && g.spread_home !== null && g.spread_home !== undefined) {
+      html += '<div class="picks2">'
+        + '<button data-sel="away" class="' + (b.selection === 'away' ? 'on' : '') + '">' + esc(g.away_team)
+        + '<span class="n">' + fmtNum(-Number(g.spread_home)) + '  ' + odds(g.price_spread_away) + '</span></button>'
+        + '<button data-sel="home" class="' + (b.selection === 'home' ? 'on' : '') + '">' + esc(g.home_team)
+        + '<span class="n">' + fmtNum(g.spread_home) + '  ' + odds(g.price_spread_home) + '</span></button></div>';
+    } else if (b.market === 'spread') {
+      html += '<p class="hint" style="margin-top:9px">No spread posted for that game yet.</p>';
+    }
+    if (b.market === 'total' && g.total_points !== null && g.total_points !== undefined) {
+      html += '<div class="picks2">'
+        + '<button data-sel="over" class="' + (b.selection === 'over' ? 'on' : '') + '">Over'
+        + '<span class="n">' + g.total_points + '  ' + odds(g.price_over) + '</span></button>'
+        + '<button data-sel="under" class="' + (b.selection === 'under' ? 'on' : '') + '">Under'
+        + '<span class="n">' + g.total_points + '  ' + odds(g.price_under) + '</span></button></div>';
+    } else if (b.market === 'total') {
+      html += '<p class="hint" style="margin-top:9px">No total posted for that game yet.</p>';
+    }
+    if (b.market === 'td') {
+      html += '<label>Player</label><input id="b-player" placeholder="e.g. Travis Kelce" value="' + esc(b.player_name || '') + '">'
+        + '<label>Odds if you know them (optional)</label><input id="b-price" inputmode="numeric" placeholder="+350" value="' + esc(b.price || '') + '">'
+        + '<p class="hint" style="margin-top:8px">Leave odds blank if you’re not sure — Alex can fill in what the book actually gave when he places it.</p>';
+    }
+  }
+  html += '<div class="btnrow"><button class="btn small" id="b-save">Save leg</button>'
+    + '<button class="btn small ghost" id="b-cancel">Cancel</button></div></div>';
+  return html;
+}
+
+function wireCard(){
+  var root = el('tab-card');
+  function on(id, fn){ var b = el(id); if (b) b.addEventListener('click', fn); }
+  on('leg-add', function(){ S.build = { open: true }; render(); });
+  on('leg-change', function(){
+    var m = myLeg();
+    S.build = { open: true, game_id: m.game_id, market: m.market, selection: m.selection, player_name: m.player_name, price: m.price };
+    render();
+  });
+  on('leg-drop', function(){
+    if (!confirm('Remove your leg?')) return;
+    api('/api/leg/delete', { week_id: S.data.week.id })
+      .then(function(){ toast('Leg removed'); return load(); })
+      .catch(function(e){ toast(e.message, true); });
+  });
+  on('b-cancel', function(){ S.build = null; render(); });
+
+  root.querySelectorAll('[data-game]').forEach(function(n){
+    n.addEventListener('click', function(){
+      S.build.game_id = n.getAttribute('data-game');
+      S.build.selection = null;
+      render();
+    });
+  });
+  root.querySelectorAll('[data-mkt]').forEach(function(n){
+    n.addEventListener('click', function(){ S.build.market = n.getAttribute('data-mkt'); S.build.selection = null; render(); });
+  });
+  root.querySelectorAll('[data-sel]').forEach(function(n){
+    n.addEventListener('click', function(){ S.build.selection = n.getAttribute('data-sel'); render(); });
+  });
+  on('b-save', function(){
+    var b = S.build;
+    if (!b.game_id) return toast('Pick a game first', true);
+    if (!b.market) return toast('Pick a bet type', true);
+    var payload = { game_id: b.game_id, market: b.market };
+    if (b.market === 'td') {
+      payload.player_name = (el('b-player') || {}).value || '';
+      payload.price = (el('b-price') || {}).value || '';
+      if (payload.player_name.trim().length < 2) return toast('Who’s scoring?', true);
+    } else {
+      if (!b.selection) return toast('Pick a side', true);
+      payload.selection = b.selection;
+    }
+    api('/api/leg', payload).then(function(){ S.build = null; toast('Leg locked in'); return load(); })
+      .catch(function(e){ toast(e.message, true); });
+  });
+}
+
+// ---------- history ----------
+function renderHistory(){
+  var d = S.data, root = el('tab-history');
+  var hist = (d.history || []).slice().reverse();
+  var html = '<div class="sechead"><h3>Season So Far</h3></div>';
+  if (!hist.length) {
+    html += '<div class="empty"><span class="big">Nothing yet</span>Weeks show up here once they’re opened.</div>';
+    root.innerHTML = '<div class="fade">' + html + '</div>';
+    return;
+  }
+  var hits = hist.filter(function(h){ return h.state === 'hit'; }).length;
+  var done = hist.filter(function(h){ return h.state === 'hit' || h.state === 'busted'; }).length;
+  var staked = hist.reduce(function(a, h){ return a + (h.legs ? h.stake_cents : 0); }, 0);
+  var back = hist.reduce(function(a, h){ return a + (h.state === 'hit' && h.payout_cents ? h.payout_cents : 0); }, 0);
+  html += '<p class="note">' + done + ' card' + (done === 1 ? '' : 's') + ' settled · <b>' + hits + '</b> hit · '
+    + money(staked) + ' staked, ' + money(back) + ' back.</p>';
+  html += '<table><tr><th>Week</th><th>Sponsor</th><th>Card</th><th class="r">Legs</th><th class="r">Payout</th></tr>';
+  hist.forEach(function(h){
+    var label = { alive: 'alive', busted: 'busted', hit: 'HIT', empty: '—' }[h.state];
+    var colour = h.state === 'hit' ? 'var(--win);filter:brightness(1.5)' : h.state === 'busted' ? 'var(--red);filter:brightness(1.3)' : 'var(--gold)';
+    html += '<tr><td>' + esc(h.label || ('Week ' + h.week_no)) + '</td>'
+      + '<td>' + (h.sponsor_id ? esc(playerName(h.sponsor_id)) : '—') + '</td>'
+      + '<td class="mono" style="color:' + colour + '">' + label + '</td>'
+      + '<td class="r mono">' + h.won + '-' + h.lost + (h.pushes ? '-' + h.pushes : '') + '</td>'
+      + '<td class="r mono">' + (h.state === 'hit' && h.payout_cents ? money(h.payout_cents) : (h.payout_cents ? '(' + money(h.payout_cents) + ')' : '—')) + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<p class="note">A payout in brackets is what the card would return if every leg still standing comes in.</p>';
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+}
+
+// ---------- admin ----------
+function renderAdmin(){
+  var d = S.data, w = d.week, root = el('tab-admin');
+  var html = '';
+  var playerOpts = function(sel){
+    return d.players.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).map(function(p){
+      return '<option value="' + p.id + '"' + (sel === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>';
+    }).join('');
+  };
+
+  html += '<div class="adm"><h4>This Week</h4>';
+  if (w) {
+    html += '<p class="hint">The sponsor is whoever lost the fantasy week. Marking the slip placed freezes every leg.</p>'
+      + '<label>Label</label><input id="aw-label" value="' + esc(w.label || '') + '">'
+      + '<div class="grid2"><div><label>Sponsor (week’s loser)</label><select id="aw-sponsor"><option value="">— not set —</option>' + playerOpts(w.sponsor_id) + '</select></div>'
+      + '<div><label>Stake ($)</label><input id="aw-stake" type="number" step="0.5" min="0" value="' + (w.stake_cents / 100) + '"></div></div>'
+      + '<div class="grid2"><div><label>Games from</label><input id="aw-ws" type="datetime-local" value="' + toLocalInput(w.window_start) + '"></div>'
+      + '<div><label>Games until</label><input id="aw-we" type="datetime-local" value="' + toLocalInput(w.window_end) + '"></div></div>'
+      + '<div class="btnrow"><button class="btn small" id="aw-save">Save</button>'
+      + '<button class="btn small ghost" id="aw-load">Load / refresh odds</button>'
+      + '<button class="btn small ' + (w.placed_at ? 'danger' : 'ghost') + '" id="aw-placed">'
+      + (w.placed_at ? 'Unfreeze card' : 'Mark slip placed') + '</button>'
+      + '<button class="btn small danger" id="aw-del">Delete week</button></div>';
+  } else {
+    html += '<p class="hint">No week open — create one below.</p>';
+  }
+  html += '</div>';
+
+  var nextNo = d.weeks.length ? Math.max.apply(null, d.weeks.map(function(x){ return x.week_no; })) + 1 : 1;
+  html += '<div class="adm"><h4>New Week</h4><p class="hint">The window is which NFL games can be bet — Thursday night through Monday night by default.</p>'
+    + '<div class="grid2"><div><label>Season</label><input id="nw-season" type="number" value="' + (w ? w.season : new Date().getFullYear()) + '"></div>'
+    + '<div><label>Week #</label><input id="nw-no" type="number" value="' + nextNo + '"></div></div>'
+    + '<div class="grid2"><div><label>Sponsor (week’s loser)</label><select id="nw-sponsor"><option value="">— set later —</option>' + playerOpts(null) + '</select></div>'
+    + '<div><label>Stake ($)</label><input id="nw-stake" type="number" step="0.5" min="0" value="5"></div></div>'
+    + '<div class="grid2"><div><label>Games from</label><input id="nw-ws" type="datetime-local" value="' + toLocalInput(nextDow(4, 12)) + '"></div>'
+    + '<div><label>Games until</label><input id="nw-we" type="datetime-local" value="' + toLocalInput(nextDow(2, 4)) + '"></div></div>'
+    + '<div class="btnrow"><button class="btn small" id="nw-create">Create week</button></div></div>';
+
+  // settle / correct legs
+  var legs = (d.legs || []).slice().sort(function(a, b){ return playerName(a.player_id).localeCompare(playerName(b.player_id)); });
+  html += '<div class="adm"><h4>Settle &amp; Fix</h4><p class="hint">Spreads and totals grade themselves once the final score lands. TD-scorer legs are yours to call. You can also correct any price to match what the book actually gave you.</p>';
+  if (!legs.length) html += '<p class="hint">No legs on the card yet.</p>';
+  legs.forEach(function(l){
+    var t = legText(l);
+    html += '<div class="pillrow"><span style="flex:1;min-width:0"><b>' + esc(playerName(l.player_id)) + '</b> — ' + esc(t.pick)
+      + ' <span style="color:#87a794;font-family:\'Spline Sans Mono\';font-size:11px">' + odds(l.price) + '</span></span>'
+      + '<span class="a">'
+      + (l.market === 'td'
+          ? '<button data-set="' + l.id + '|win" class="' + (l.result === 'win' ? 'on' : '') + '">W</button>'
+            + '<button data-set="' + l.id + '|loss" class="' + (l.result === 'loss' ? 'on' : '') + '">L</button>'
+            + '<button data-set="' + l.id + '|push" class="' + (l.result === 'push' ? 'on' : '') + '">P</button>'
+            + '<button data-set="' + l.id + '|">clear</button>'
+          : '<span style="color:#87a794;font-family:\'Spline Sans Mono\';font-size:11px">' + (l.result || 'auto') + '</span>')
+      + '<button data-price="' + l.id + '">odds</button></span></div>';
+  });
+  html += '<div class="btnrow"><button class="btn small ghost" id="ad-grade">Fetch scores &amp; grade now</button></div></div>';
+
+  html += '<div class="adm"><h4>League</h4><p class="hint">Twelve of you. Paste names separated by commas to add several at once — they claim a PIN on first sign-in.</p>';
+  d.players.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).forEach(function(p){
+    html += '<div class="pillrow"><span>' + esc(p.name) + (p.is_commissioner ? ' ★' : '') + (p.claimed ? '' : ' <span style="color:#87a794;font-size:11px">(not signed in yet)</span>') + '</span>'
+      + '<span class="a"><button data-reset="' + p.id + '">reset pin</button>'
+      + (p.id !== d.me.id ? '<button data-del="' + p.id + '">remove</button>' : '') + '</span></div>';
+  });
+  html += '<label>Add players</label><input id="ap-name" placeholder="Mike, Dave, Chris">'
+    + '<div class="btnrow"><button class="btn small" id="ap-add">Add</button></div></div>';
+
+  html += '<div class="adm"><h4>Settings</h4><p class="hint">'
+    + (d.has_api_key ? 'Odds API key is set.' + (d.odds_requests_remaining ? ' Requests left this month: ' + esc(d.odds_requests_remaining) + '.' : '') : 'No Odds API key yet.')
+    + '</p><label>The Odds API key</label><input id="cfg-key" placeholder="' + (d.has_api_key ? '•••••••• (saved — paste to replace)' : 'paste key') + '">'
+    + '<div class="btnrow"><button class="btn small" id="cfg-save">Save key</button></div></div>';
+
+  root.innerHTML = '<div class="fade">' + html + '</div>';
+
+  function on(id, fn){ var b = el(id); if (b) b.addEventListener('click', fn); }
+  on('aw-save', function(){
+    api('/api/admin/week/update', { id: w.id, label: el('aw-label').value,
+      sponsor_id: el('aw-sponsor').value || null,
+      stake_cents: Math.round(parseFloat(el('aw-stake').value || '5') * 100),
+      window_start: toIso(el('aw-ws').value), window_end: toIso(el('aw-we').value)
+    }).then(function(){ toast('Saved'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('aw-load', function(){
+    var b = el('aw-load'); b.disabled = true;
+    api('/api/admin/load-games', { week_id: w.id })
+      .then(function(r){ toast('Loaded ' + r.loaded + ' games'); load(); })
+      .catch(function(e){ b.disabled = false; toast(e.message, true); });
+  });
+  on('aw-placed', function(){
+    var placing = !w.placed_at;
+    if (placing && !confirm('Freeze the card? Nobody can add or change a leg after this.')) return;
+    api('/api/admin/week/update', { id: w.id, placed_at: placing ? new Date().toISOString() : null })
+      .then(function(){ toast(placing ? 'Slip is down' : 'Card reopened'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('aw-del', function(){
+    if (!confirm('Delete this week and every leg on it?')) return;
+    api('/api/admin/week/delete', { id: w.id }).then(function(){ S.weekId = null; toast('Deleted'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('nw-create', function(){
+    api('/api/admin/week', { season: +el('nw-season').value, week_no: +el('nw-no').value,
+      sponsor_id: el('nw-sponsor').value || null,
+      stake_cents: Math.round(parseFloat(el('nw-stake').value || '5') * 100),
+      window_start: toIso(el('nw-ws').value), window_end: toIso(el('nw-we').value)
+    }).then(function(r){ S.weekId = r.week.id; toast('Week created — now load odds'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('ad-grade', function(){
+    api('/api/admin/grade', {}).then(function(r){ toast('Graded ' + r.graded + ' leg' + (r.graded === 1 ? '' : 's')); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('ap-add', function(){
+    api('/api/admin/player', { name: el('ap-name').value })
+      .then(function(r){ toast('Added ' + r.added.length); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('cfg-save', function(){
+    api('/api/admin/config', { odds_api_key: el('cfg-key').value }).then(function(){ toast('Saved'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  root.querySelectorAll('[data-set]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var parts = b.getAttribute('data-set').split('|');
+      api('/api/admin/leg', { leg_id: parts[0], result: parts[1] || null })
+        .then(function(){ load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+  root.querySelectorAll('[data-price]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v = prompt('American odds for this leg (e.g. -110 or +350). Blank to clear.');
+      if (v === null) return;
+      api('/api/admin/leg', { leg_id: b.getAttribute('data-price'), price: v })
+        .then(function(){ toast('Odds updated'); load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+  root.querySelectorAll('[data-reset]').forEach(function(b){
+    b.addEventListener('click', function(){
+      api('/api/admin/player/reset', { id: b.getAttribute('data-reset') })
+        .then(function(){ toast('PIN reset'); load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+  root.querySelectorAll('[data-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (!confirm('Remove this player and their legs?')) return;
+      api('/api/admin/player/delete', { id: b.getAttribute('data-del') })
+        .then(function(){ toast('Removed'); load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+}
+
+function nextDow(dow, hour){
+  var d = new Date(); d.setHours(hour, 0, 0, 0);
+  while (d.getDay() !== dow || d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+
+// ---------- events ----------
+el('li-go').addEventListener('click', function(){
+  api('/api/login', { name: el('li-name').value, pin: el('li-pin').value }).then(function(r){
+    S.token = r.token; localStorage.setItem('lp_token', r.token);
+    if (r.player.first_login) toast('Welcome ' + r.player.name + ' — that PIN is yours now');
+    load();
+  }).catch(function(e){ toast(e.message, true); });
+});
+el('li-pin').addEventListener('keydown', function(e){ if (e.key === 'Enter') el('li-go').click(); });
+el('userchip').addEventListener('click', function(){
+  if (!confirm('Sign out?')) return;
+  api('/api/logout', {}).catch(function(){});
+  S.token = ''; S.data = null; localStorage.removeItem('lp_token'); render();
+});
+el('weeksel').addEventListener('change', function(){ S.weekId = el('weeksel').value; S.build = null; load(); });
+document.querySelectorAll('#nav button').forEach(function(b){
+  b.addEventListener('click', function(){
+    S.tab = b.getAttribute('data-tab');
+    document.querySelectorAll('#nav button').forEach(function(x){ x.classList.toggle('on', x === b); });
+    render();
+  });
+});
+
+setInterval(function(){ if (S.token && !(S.build && S.build.open)) load(); }, 120000);
+
+if (S.token) load(); else render();
+})();
+</script>
+</body>
+</html>
