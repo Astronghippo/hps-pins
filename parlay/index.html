@@ -83,6 +83,13 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
   font-size:12.5px;color:var(--paper);line-height:1.5}
 .note{font-size:12.5px;color:#87a794;line-height:1.5;margin:0 0 10px;padding:0 2px}
 .note b{color:var(--gold);font-weight:600}
+.lockstrip{display:flex;justify-content:space-between;align-items:center;background:var(--felt2);
+  border:1px solid var(--gold2);border-radius:6px;padding:10px 13px;margin:0 0 10px}
+.lockstrip .lg{font-family:'Big Shoulders Display';font-weight:800;font-size:18px;letter-spacing:.08em;text-transform:uppercase}
+.lockstrip .sub{display:block;font-family:'Barlow';font-size:11.5px;font-weight:500;letter-spacing:0;color:#87a794;text-transform:none}
+.lockstrip .cd{font-family:'Spline Sans Mono';font-weight:700;font-size:15px;color:var(--gold)}
+.lockstrip.closed{border-color:var(--line)}
+.lockstrip.closed .cd{color:var(--red)}
 
 .sechead{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 8px}
 .sechead h3{font-family:'Big Shoulders Display';font-weight:800;font-size:23px;letter-spacing:.06em;text-transform:uppercase}
@@ -237,6 +244,13 @@ function fmtNum(n){ var v = Number(n); return (v > 0 ? '+' : '') + (v % 1 === 0 
 function fmtTime(iso){
   return new Intl.DateTimeFormat(undefined, { weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
 }
+function fmtCountdown(ms){
+  if (ms <= 0) return 'CLOSED';
+  var t = Math.floor(ms/1000), d = Math.floor(t/86400), h = Math.floor(t%86400/3600), m = Math.floor(t%3600/60), sec = t%60;
+  if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
+  if (h > 0) return h + 'h ' + m + 'm ' + ('0'+sec).slice(-2) + 's';
+  return m + 'm ' + ('0'+sec).slice(-2) + 's';
+}
 function fmtKick(iso){
   return new Intl.DateTimeFormat(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).format(new Date(iso));
 }
@@ -255,7 +269,11 @@ function gameById(id){ return (S.data.games || []).find(function(g){ return g.id
 function playerName(id){ var p = S.data.players.find(function(x){ return x.id === id; }); return p ? p.name : '?'; }
 function myLeg(){ return (S.data.legs || []).find(function(l){ return l.player_id === S.data.me.id; }); }
 function started(g){ return new Date(g.commence_time).getTime() <= now(); }
-function cardFrozen(){ return !!(S.data.week && S.data.week.placed_at); }
+function lockPassed(){
+  var w = S.data.week;
+  return !!(w && w.lock_at && new Date(w.lock_at).getTime() <= now());
+}
+function cardFrozen(){ var w = S.data.week; return !!(w && (w.placed_at || lockPassed())); }
 
 // One leg rendered as a sentence: "Bengals -3.5", "OVER 42.5", "Kelce anytime TD".
 function legText(l){
@@ -343,10 +361,18 @@ function renderCard(){
   // sponsor + placed state
   html += '<div class="sponsor"><span>Sponsored by</span><span class="who">'
     + (w.sponsor_id ? esc(playerName(w.sponsor_id)) : 'not set') + '</span><span>' + money(w.stake_cents) + '</span></div>';
+  if (w.lock_at) {
+    var shut = lockPassed();
+    html += '<div class="lockstrip' + (shut ? ' closed' : '') + '">'
+      + '<div class="lg">Picks ' + (shut ? 'closed' : 'lock')
+      + '<span class="sub">' + esc(fmtTime(w.lock_at)) + '</span></div>'
+      + '<div class="cd" data-deadline="' + esc(w.lock_at) + '">'
+      + fmtCountdown(new Date(w.lock_at).getTime() - now()) + '</div></div>';
+  }
   if (w.placed_at) {
     html += '<div class="placed">🎟️ <b>Slip is down.</b> Placed ' + esc(fmtTime(w.placed_at)) + ' — legs are locked in as they stand.</div>';
-  } else {
-    html += '<p class="note">Everyone can see the card as it fills up, so check what’s already on it before you add yours. You can change your leg until your game kicks off, or until Alex places the slip.</p>';
+  } else if (!lockPassed()) {
+    html += '<p class="note">Everyone can see the card as it fills up, so check what’s already on it before you add yours. You can change your leg right up to the lock — or until your game kicks off, if that comes first.</p>';
   }
 
   // your leg
@@ -363,7 +389,7 @@ function renderCard(){
         + '<button class="btn small danger" id="leg-drop">Remove</button></div>';
     }
   } else if (cardFrozen()) {
-    html += '<div class="empty">You didn’t get a leg in before the slip went down.</div>';
+    html += '<div class="empty">You didn’t get a leg in before picks closed.</div>';
   } else {
     html += '<div class="leg empty"><div class="who">You</div><div class="bet"><div class="pick">nothing yet</div></div></div>'
       + '<div class="btnrow"><button class="btn small" id="leg-add">Add your leg</button></div>';
@@ -546,6 +572,7 @@ function renderAdmin(){
       + '<label>Label</label><input id="aw-label" value="' + esc(w.label || '') + '">'
       + '<div class="grid2"><div><label>Sponsor (week’s loser)</label><select id="aw-sponsor"><option value="">— not set —</option>' + playerOpts(w.sponsor_id) + '</select></div>'
       + '<div><label>Stake ($)</label><input id="aw-stake" type="number" step="0.5" min="0" value="' + (w.stake_cents / 100) + '"></div></div>'
+      + '<label>Picks lock at</label><input id="aw-lock" type="datetime-local" value="' + toLocalInput(w.lock_at) + '">'
       + '<div class="grid2"><div><label>Games from</label><input id="aw-ws" type="datetime-local" value="' + toLocalInput(w.window_start) + '"></div>'
       + '<div><label>Games until</label><input id="aw-we" type="datetime-local" value="' + toLocalInput(w.window_end) + '"></div></div>'
       + '<div class="btnrow"><button class="btn small" id="aw-save">Save</button>'
@@ -564,6 +591,7 @@ function renderAdmin(){
     + '<div><label>Week #</label><input id="nw-no" type="number" value="' + nextNo + '"></div></div>'
     + '<div class="grid2"><div><label>Sponsor (week’s loser)</label><select id="nw-sponsor"><option value="">— set later —</option>' + playerOpts(null) + '</select></div>'
     + '<div><label>Stake ($)</label><input id="nw-stake" type="number" step="0.5" min="0" value="5"></div></div>'
+    + '<label>Picks lock at</label><input id="nw-lock" type="datetime-local" value="' + toLocalInput(nextDow(0, 10)) + '">'
     + '<div class="grid2"><div><label>Games from</label><input id="nw-ws" type="datetime-local" value="' + toLocalInput(nextDow(4, 12)) + '"></div>'
     + '<div><label>Games until</label><input id="nw-we" type="datetime-local" value="' + toLocalInput(nextDow(2, 4)) + '"></div></div>'
     + '<div class="btnrow"><button class="btn small" id="nw-create">Create week</button></div></div>';
@@ -608,6 +636,7 @@ function renderAdmin(){
     api('/api/admin/week/update', { id: w.id, label: el('aw-label').value,
       sponsor_id: el('aw-sponsor').value || null,
       stake_cents: Math.round(parseFloat(el('aw-stake').value || '5') * 100),
+      lock_at: toIso(el('aw-lock').value),
       window_start: toIso(el('aw-ws').value), window_end: toIso(el('aw-we').value)
     }).then(function(){ toast('Saved'); load(); }).catch(function(e){ toast(e.message, true); });
   });
@@ -631,6 +660,7 @@ function renderAdmin(){
     api('/api/admin/week', { season: +el('nw-season').value, week_no: +el('nw-no').value,
       sponsor_id: el('nw-sponsor').value || null,
       stake_cents: Math.round(parseFloat(el('nw-stake').value || '5') * 100),
+      lock_at: toIso(el('nw-lock').value),
       window_start: toIso(el('nw-ws').value), window_end: toIso(el('nw-we').value)
     }).then(function(r){ S.weekId = r.week.id; toast('Week created — now load odds'); load(); }).catch(function(e){ toast(e.message, true); });
   });
@@ -703,6 +733,14 @@ document.querySelectorAll('#nav button').forEach(function(b){
   });
 });
 
+setInterval(function(){
+  document.querySelectorAll('[data-deadline]').forEach(function(n){
+    var ms = new Date(n.getAttribute('data-deadline')).getTime() - now();
+    var txt = fmtCountdown(ms);
+    if (n.textContent !== txt) n.textContent = txt;
+    if (ms <= 0 && !n._closed) { n._closed = true; load(); }
+  });
+}, 1000);
 setInterval(function(){ if (S.token && !(S.build && S.build.open)) load(); }, 120000);
 
 if (S.token) load(); else render();
