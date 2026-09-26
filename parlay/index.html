@@ -76,6 +76,9 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .hero .sub{font-family:'Spline Sans Mono';font-size:12px;letter-spacing:.12em;color:#87a794;margin-top:7px}
 .hero .money{font-family:'Spline Sans Mono';font-weight:700;font-size:20px;color:var(--paper);margin-top:9px}
 .hero .money b{color:var(--gold)}
+.hero .split{font-family:'Spline Sans Mono';font-size:13px;color:#87a794;margin-top:5px;letter-spacing:.04em}
+.hero .split b{color:var(--paper);font-size:15px}
+.hero.hit .split b{color:#5bc98a}
 .sponsor{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--felt2);
   border:1px solid var(--line);border-radius:6px;padding:10px 13px;margin:0 0 10px;font-size:13.5px}
 .sponsor .who{font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
@@ -353,6 +356,10 @@ function renderCard(){
     + '<div class="sub">' + esc(subs[c.state]) + '</div>';
   if (c.payout_cents) {
     html += '<div class="money">' + money(w.stake_cents) + ' returns <b>' + money(c.payout_cents) + '</b></div>';
+    if (c.legs > 0) {
+      html += '<div class="split">split ' + c.legs + ' ways \u00b7 <b>' + money(Math.floor(c.payout_cents / c.legs)) + '</b> each'
+        + (c.state === 'alive' ? ' if it runs' : '') + '</div>';
+    }
   } else if (c.missing_price) {
     html += '<div class="money" style="font-size:13px;color:#87a794">Payout needs odds on ' + c.missing_price + ' leg' + (c.missing_price === 1 ? '' : 's') + '</div>';
   }
@@ -372,7 +379,7 @@ function renderCard(){
   if (w.placed_at) {
     html += '<div class="placed">🎟️ <b>Slip is down.</b> Placed ' + esc(fmtTime(w.placed_at)) + ' — legs are locked in as they stand.</div>';
   } else if (!lockPassed()) {
-    html += '<p class="note">Everyone can see the card as it fills up, so check what’s already on it before you add yours. You can change your leg right up to the lock — or until your game kicks off, if that comes first.</p>';
+    html += '<p class="note">Everyone can see the card as it fills up, so check what’s already on it before you add yours. You can change your leg right up to the lock — or until your game kicks off, if that comes first. Whatever the card returns gets split evenly between everyone who got a leg on it.</p>';
   }
 
   // your leg
@@ -549,7 +556,11 @@ function renderHistory(){
       + '<td>' + (h.sponsor_id ? esc(playerName(h.sponsor_id)) : '—') + '</td>'
       + '<td class="mono" style="color:' + colour + '">' + label + '</td>'
       + '<td class="r mono">' + h.won + '-' + h.lost + (h.pushes ? '-' + h.pushes : '') + '</td>'
-      + '<td class="r mono">' + (h.state === 'hit' && h.payout_cents ? money(h.payout_cents) : (h.payout_cents ? '(' + money(h.payout_cents) + ')' : '—')) + '</td></tr>';
+      + '<td class="r mono">' + (h.payout_cents
+          ? (h.state === 'hit' ? money(h.payout_cents) : '(' + money(h.payout_cents) + ')')
+            + (h.legs ? '<span style="display:block;font-size:10.5px;color:#87a794;font-weight:500">'
+                + money(Math.floor(h.payout_cents / h.legs)) + ' ea</span>' : '')
+          : '—') + '</td></tr>';
   });
   html += '</table>';
   html += '<p class="note">A payout in brackets is what the card would return if every leg still standing comes in.</p>';
