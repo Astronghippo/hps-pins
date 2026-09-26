@@ -135,7 +135,7 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
   background:#efe5cd;padding:6px 11px;border-bottom:1px solid #e6dcc2;font-weight:700}
 .gamerow.on .k{color:#87a794}
 .gamerow.dead{opacity:.45;cursor:not-allowed}
-.mkt{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}
+.mkt{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:11px}
 .mkt button{font-family:'Big Shoulders Display';font-weight:800;font-size:15px;letter-spacing:.05em;text-transform:uppercase;
   padding:10px 4px;border:1.5px solid #cfc4a6;background:#fbf7ec;color:var(--ink);border-radius:4px;cursor:pointer}
 .mkt button.on{background:var(--felt2);color:var(--gold);border-color:var(--gold2)}
@@ -287,6 +287,10 @@ function legText(l){
     var team = l.selection === 'home' ? g.home_team : g.away_team;
     return { pick: team + ' ' + fmtNum(l.line), meta: matchup + ' · ' + fmtTime(g.commence_time) };
   }
+  if (l.market === 'ml') {
+    var side = l.selection === 'home' ? g.home_team : g.away_team;
+    return { pick: side + ' ML', meta: matchup + ' · ' + fmtTime(g.commence_time) };
+  }
   if (l.market === 'total') {
     return { pick: l.selection.toUpperCase() + ' ' + Number(l.line), meta: matchup + ' · ' + fmtTime(g.commence_time) };
   }
@@ -431,7 +435,7 @@ function renderCard(){
 function builderHtml(){
   var d = S.data, b = S.build;
   var html = '<div class="builder"><h4>Build your leg</h4>'
-    + '<p class="hint">Pick the game, then what you want. Spread and total pull the live number and price; a TD scorer is a name.</p>';
+    + '<p class="hint">Pick the game, then what you want. Spread, total and moneyline pull the live number and price; a TD scorer is a name.</p>';
   html += '<div class="gamelist">';
   var lastDay = '';
   (d.games || []).forEach(function(g){
@@ -453,6 +457,7 @@ function builderHtml(){
     html += '<div class="mkt">'
       + '<button data-mkt="spread" class="' + (b.market === 'spread' ? 'on' : '') + '">Spread</button>'
       + '<button data-mkt="total" class="' + (b.market === 'total' ? 'on' : '') + '">Over / Under</button>'
+      + '<button data-mkt="ml" class="' + (b.market === 'ml' ? 'on' : '') + '">Moneyline</button>'
       + '<button data-mkt="td" class="' + (b.market === 'td' ? 'on' : '') + '">TD Scorer</button>'
       + '</div>';
     if (b.market === 'spread' && g.spread_home !== null && g.spread_home !== undefined) {
@@ -463,6 +468,15 @@ function builderHtml(){
         + '<span class="n">' + fmtNum(g.spread_home) + '  ' + odds(g.price_spread_home) + '</span></button></div>';
     } else if (b.market === 'spread') {
       html += '<p class="hint" style="margin-top:9px">No spread posted for that game yet.</p>';
+    }
+    if (b.market === 'ml' && g.price_ml_home !== null && g.price_ml_home !== undefined) {
+      html += '<div class="picks2">'
+        + '<button data-sel="away" class="' + (b.selection === 'away' ? 'on' : '') + '">' + esc(g.away_team)
+        + '<span class="n">' + odds(g.price_ml_away) + '</span></button>'
+        + '<button data-sel="home" class="' + (b.selection === 'home' ? 'on' : '') + '">' + esc(g.home_team)
+        + '<span class="n">' + odds(g.price_ml_home) + '</span></button></div>';
+    } else if (b.market === 'ml') {
+      html += '<p class="hint" style="margin-top:9px">No moneyline posted for that game yet.</p>';
     }
     if (b.market === 'total' && g.total_points !== null && g.total_points !== undefined) {
       html += '<div class="picks2">'
