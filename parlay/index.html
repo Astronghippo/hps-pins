@@ -146,6 +146,15 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .picks2 button .n{display:block;font-family:'Spline Sans Mono';font-size:16px;margin-top:3px}
 .picks2 button.on{background:var(--felt2);color:var(--paper);border-color:var(--gold2)}
 .picks2 button.on .n{color:var(--gold)}
+.tdlist{margin-top:9px;max-height:268px;overflow-y:auto;border:1px solid #d8ccab;border-radius:4px;background:#fbf7ec}
+.tdlist button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;
+  background:none;border:none;border-bottom:1px solid #e6dcc2;color:var(--ink);
+  font-family:'Barlow';font-weight:700;font-size:14px;padding:9px 11px;cursor:pointer;text-align:left}
+.tdlist button:last-child{border-bottom:none}
+.tdlist button:hover{background:#f3ecd9}
+.tdlist button .n{font-family:'Spline Sans Mono';font-size:14px;color:var(--ink2);flex:none}
+.tdlist button.on{background:var(--felt2);color:var(--paper)}
+.tdlist button.on .n{color:var(--gold)}
 
 /* ---------- history ---------- */
 table{width:100%;border-collapse:collapse;margin:12px 0}
@@ -284,6 +293,17 @@ function lockPassed(){
 function cardFrozen(){ var w = S.data.week; return !!(w && (w.placed_at || lockPassed())); }
 
 // One leg rendered as a sentence: "Bengals -3.5", "OVER 42.5", "Kelce anytime TD".
+// The anytime-TD board is one API request per game, so it is pulled only when someone
+// actually opens the TD tab for that game, then cached on the game for everyone.
+function loadBoard(gameId){
+  var g = gameById(gameId);
+  if (!g || g._board) return;
+  g._board = true;
+  api('/api/td-board', { game_id: gameId })
+    .then(function(r){ g.td_prices = r.prices || []; render(); })
+    .catch(function(){ g.td_prices = []; render(); });
+}
+
 function legText(l){
   var g = gameById(l.game_id);
   if (!g) return { pick: 'Unknown game', meta: '' };
@@ -447,7 +467,7 @@ function renderCard(){
 function builderHtml(){
   var d = S.data, b = S.build;
   var html = '<div class="builder"><h4>Build your leg</h4>'
-    + '<p class="hint">Pick the game, then what you want. Spread, total and moneyline pull the live number and price; a TD scorer is a name.</p>';
+    + '<p class="hint">Pick the game, then what you want. Spread, total and moneyline pull the live number and price; a TD scorer comes off the book’s anytime board.</p>';
   html += '<div class="gamelist">';
   var lastDay = '';
   (d.games || []).forEach(function(g){
@@ -500,9 +520,23 @@ function builderHtml(){
       html += '<p class="hint" style="margin-top:9px">No total posted for that game yet.</p>';
     }
     if (b.market === 'td') {
-      html += '<label>Player</label><input id="b-player" placeholder="e.g. Travis Kelce" value="' + esc(b.player_name || '') + '">'
+      var board = Array.isArray(g.td_prices) ? g.td_prices : null;
+      if (!board) {
+        loadBoard(g.id);
+        html += '<p class="hint" style="margin-top:9px">Pulling the anytime-TD board…</p>';
+      } else if (board.length) {
+        html += '<div class="tdlist">';
+        board.forEach(function(o){
+          html += '<button data-td="' + esc(o.name) + '" class="' + (b.player_name === o.name ? 'on' : '') + '">'
+            + '<span>' + esc(o.name) + '</span><span class="n">' + odds(o.price) + '</span></button>';
+        });
+        html += '</div>';
+      }
+      var onBoard = !!(board && board.some(function(o){ return o.name === b.player_name; }));
+      html += '<label>' + (board && board.length ? 'Someone not on that list' : 'Player') + '</label>'
+        + '<input id="b-player" placeholder="e.g. Travis Kelce" value="' + esc(onBoard ? '' : (b.player_name || '')) + '">'
         + '<label>Odds if you know them (optional)</label><input id="b-price" inputmode="numeric" placeholder="+350" value="' + esc(b.price || '') + '">'
-        + '<p class="hint" style="margin-top:8px">Last name is enough — these grade themselves off the game’s scoring plays once it’s final. Leave odds blank if you’re not sure; Alex can fill in what the book actually gave when he places it.</p>';
+        + '<p class="hint" style="margin-top:8px">Prices come straight off the book, and these grade themselves off the game’s scoring plays once it’s final. Type a name instead if your guy isn’t listed — last name is enough.</p>';
     }
   }
   html += '<div class="btnrow"><button class="btn small" id="b-save">Save leg</button>'
@@ -537,6 +571,13 @@ function wireCard(){
   root.querySelectorAll('[data-mkt]').forEach(function(n){
     n.addEventListener('click', function(){ S.build.market = n.getAttribute('data-mkt'); S.build.selection = null; render(); });
   });
+  root.querySelectorAll('[data-td]').forEach(function(n){
+    n.addEventListener('click', function(){
+      S.build.player_name = n.getAttribute('data-td');
+      S.build.price = '';
+      render();
+    });
+  });
   root.querySelectorAll('[data-sel]').forEach(function(n){
     n.addEventListener('click', function(){ S.build.selection = n.getAttribute('data-sel'); render(); });
   });
@@ -546,7 +587,7 @@ function wireCard(){
     if (!b.market) return toast('Pick a bet type', true);
     var payload = { game_id: b.game_id, market: b.market };
     if (b.market === 'td') {
-      payload.player_name = (el('b-player') || {}).value || '';
+      payload.player_name = ((el('b-player') || {}).value || '').trim() || b.player_name || '';
       payload.price = (el('b-price') || {}).value || '';
       if (payload.player_name.trim().length < 2) return toast('Who’s scoring?', true);
     } else {
@@ -652,7 +693,8 @@ function renderAdmin(){
           : '<span class="src">' + (l.result || 'auto') + '</span>')
       + '<button data-price="' + l.id + '">odds</button></span></div>';
   });
-  html += '<div class="btnrow"><button class="btn small ghost" id="ad-grade">Fetch scores &amp; grade now</button></div></div>';
+  html += '<div class="btnrow"><button class="btn small ghost" id="ad-price">Re-price TD legs</button>'
+    + '<button class="btn small ghost" id="ad-grade">Fetch scores &amp; grade now</button></div></div>';
 
   html += '<div class="adm"><h4>League</h4><p class="hint">Twelve of you. Paste names separated by commas to add several at once — they claim a PIN on first sign-in.</p>';
   d.players.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).forEach(function(p){
@@ -702,6 +744,16 @@ function renderAdmin(){
       lock_at: toIso(el('nw-lock').value),
       window_start: toIso(el('nw-ws').value), window_end: toIso(el('nw-we').value)
     }).then(function(r){ S.weekId = r.week.id; toast('Week created — now load odds'); load(); }).catch(function(e){ toast(e.message, true); });
+  });
+  on('ad-price', function(){
+    var b = el('ad-price'); b.disabled = true;
+    api('/api/admin/td-prices', { week_id: w.id })
+      .then(function(r){
+        toast('Priced ' + r.priced + ' TD leg' + (r.priced === 1 ? '' : 's')
+          + (r.missed.length ? ' · no board price for ' + r.missed.join(', ') : ''));
+        load();
+      })
+      .catch(function(e){ b.disabled = false; toast(e.message, true); });
   });
   on('ad-grade', function(){
     api('/api/admin/grade', {}).then(function(r){ toast('Graded ' + r.graded + ' leg' + (r.graded === 1 ? '' : 's')); load(); }).catch(function(e){ toast(e.message, true); });
