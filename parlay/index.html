@@ -110,6 +110,7 @@ nav button.on{color:var(--felt);background:linear-gradient(180deg,var(--gold),va
 .leg .bet{flex:1;min-width:0}
 .leg .bet .pick{font-weight:700;font-size:14.5px;line-height:1.2}
 .leg .bet .meta{font-size:11.5px;color:#87a794;margin-top:2px}
+.leg .bet .meta.tds{color:#6d8a79;font-size:10.5px;letter-spacing:.01em}
 .leg .odds{font-family:'Spline Sans Mono';font-weight:700;font-size:13px;color:var(--gold);flex:none}
 .leg .pill{font-family:'Spline Sans Mono';font-weight:700;font-size:10px;letter-spacing:.1em;
   padding:3px 7px;border-radius:3px;flex:none}
@@ -164,6 +165,10 @@ th.r,td.r{text-align:right}
 .pillrow .a{display:flex;gap:6px;flex:none}
 .pillrow button{background:none;border:1px solid var(--line);color:#87a794;border-radius:4px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:'Spline Sans Mono'}
 .pillrow button.on{border-color:var(--gold2);color:var(--gold)}
+.legrow{display:block}
+.legrow .lbl{display:block;margin-bottom:6px;line-height:1.35}
+.legrow .a{flex-wrap:wrap;justify-content:flex-start}
+.legrow .src{color:#87a794;font-family:'Spline Sans Mono';font-size:11px;align-self:center;margin-right:2px}
 
 #toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--paper);color:var(--ink);
   font-weight:600;font-size:14px;padding:11px 18px;border-radius:6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:all .25s;z-index:60;max-width:90vw;text-align:center}
@@ -294,7 +299,12 @@ function legText(l){
   if (l.market === 'total') {
     return { pick: l.selection.toUpperCase() + ' ' + Number(l.line), meta: matchup + ' · ' + fmtTime(g.commence_time) };
   }
-  return { pick: l.player_name + ' — anytime TD', meta: matchup + ' · ' + fmtTime(g.commence_time) };
+  var note = '';
+  if (g.completed && Array.isArray(g.td_scorers)) {
+    var who = g.td_scorers.slice(0, 6).join(', ') + (g.td_scorers.length > 6 ? ' +' + (g.td_scorers.length - 6) + ' more' : '');
+    note = g.td_scorers.length ? 'TDs: ' + who : 'nobody found the end zone';
+  }
+  return { pick: l.player_name + ' — anytime TD', meta: matchup + ' · ' + fmtTime(g.commence_time), note: note };
 }
 
 // ---------- data ----------
@@ -392,7 +402,8 @@ function renderCard(){
   if (mine) {
     var t = legText(mine);
     html += '<div class="leg mine' + (mine.result ? ' ' + mine.result : '') + '">'
-      + '<div class="who">You</div><div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div></div>'
+      + '<div class="who">You</div><div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div>'
+      + (t.note ? '<div class="meta tds">' + esc(t.note) + '</div>' : '') + '</div>'
       + '<div class="odds">' + odds(mine.price) + '</div>'
       + '<div class="pill ' + (mine.result || 'pending') + '">' + (mine.result || 'pending').toUpperCase() + '</div></div>';
     if (!cardFrozen() && !mine.result) {
@@ -421,7 +432,8 @@ function renderCard(){
     var t = legText(l);
     html += '<div class="leg' + (p.id === d.me.id ? ' mine' : '') + (l.result ? ' ' + l.result : '') + '">'
       + '<div class="who">' + esc(p.name) + '</div>'
-      + '<div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div></div>'
+      + '<div class="bet"><div class="pick">' + esc(t.pick) + '</div><div class="meta">' + esc(t.meta) + '</div>'
+      + (t.note ? '<div class="meta tds">' + esc(t.note) + '</div>' : '') + '</div>'
       + '<div class="odds">' + odds(l.price) + '</div>'
       + '<div class="pill ' + (l.result || 'pending') + '">' + (l.result || 'pending').toUpperCase() + '</div></div>';
   });
@@ -490,7 +502,7 @@ function builderHtml(){
     if (b.market === 'td') {
       html += '<label>Player</label><input id="b-player" placeholder="e.g. Travis Kelce" value="' + esc(b.player_name || '') + '">'
         + '<label>Odds if you know them (optional)</label><input id="b-price" inputmode="numeric" placeholder="+350" value="' + esc(b.price || '') + '">'
-        + '<p class="hint" style="margin-top:8px">Leave odds blank if you’re not sure — Alex can fill in what the book actually gave when he places it.</p>';
+        + '<p class="hint" style="margin-top:8px">Last name is enough — these grade themselves off the game’s scoring plays once it’s final. Leave odds blank if you’re not sure; Alex can fill in what the book actually gave when he places it.</p>';
     }
   }
   html += '<div class="btnrow"><button class="btn small" id="b-save">Save leg</button>'
@@ -623,19 +635,21 @@ function renderAdmin(){
 
   // settle / correct legs
   var legs = (d.legs || []).slice().sort(function(a, b){ return playerName(a.player_id).localeCompare(playerName(b.player_id)); });
-  html += '<div class="adm"><h4>Settle &amp; Fix</h4><p class="hint">Spreads and totals grade themselves once the final score lands. TD-scorer legs are yours to call. You can also correct any price to match what the book actually gave you.</p>';
+  html += '<div class="adm"><h4>Settle &amp; Fix</h4><p class="hint">Everything grades itself: spreads, totals and moneylines off the final score, TD legs off the game’s scoring plays at ESPN. Overrule any of it with the buttons — your call sticks, and a re-check won’t undo it. You can also correct a price to match what the book actually gave you.</p>';
   if (!legs.length) html += '<p class="hint">No legs on the card yet.</p>';
   legs.forEach(function(l){
     var t = legText(l);
-    html += '<div class="pillrow"><span style="flex:1;min-width:0"><b>' + esc(playerName(l.player_id)) + '</b> — ' + esc(t.pick)
+    html += '<div class="pillrow legrow"><span class="lbl"><b>' + esc(playerName(l.player_id)) + '</b> — ' + esc(t.pick)
       + ' <span style="color:#87a794;font-family:\'Spline Sans Mono\';font-size:11px">' + odds(l.price) + '</span></span>'
       + '<span class="a">'
       + (l.market === 'td'
-          ? '<button data-set="' + l.id + '|win" class="' + (l.result === 'win' ? 'on' : '') + '">W</button>'
+          ? '<span class="src">' + (l.graded_by === 'commissioner' ? 'your call' : (l.result ? 'auto' : 'pending')) + '</span>'
+            + '<button data-set="' + l.id + '|win" class="' + (l.result === 'win' ? 'on' : '') + '">W</button>'
             + '<button data-set="' + l.id + '|loss" class="' + (l.result === 'loss' ? 'on' : '') + '">L</button>'
             + '<button data-set="' + l.id + '|push" class="' + (l.result === 'push' ? 'on' : '') + '">P</button>'
             + '<button data-set="' + l.id + '|">clear</button>'
-          : '<span style="color:#87a794;font-family:\'Spline Sans Mono\';font-size:11px">' + (l.result || 'auto') + '</span>')
+            + '<button data-recheck="' + l.game_id + '">re-check</button>'
+          : '<span class="src">' + (l.result || 'auto') + '</span>')
       + '<button data-price="' + l.id + '">odds</button></span></div>';
   });
   html += '<div class="btnrow"><button class="btn small ghost" id="ad-grade">Fetch scores &amp; grade now</button></div></div>';
@@ -704,6 +718,17 @@ function renderAdmin(){
       var parts = b.getAttribute('data-set').split('|');
       api('/api/admin/leg', { leg_id: parts[0], result: parts[1] || null })
         .then(function(){ load(); }).catch(function(e){ toast(e.message, true); });
+    });
+  });
+  root.querySelectorAll('[data-recheck]').forEach(function(b){
+    b.addEventListener('click', function(){
+      b.disabled = true;
+      api('/api/admin/td-recheck', { game_id: b.getAttribute('data-recheck') })
+        .then(function(r){
+          toast(r.scorers.length ? 'Scored: ' + r.scorers.join(', ') : 'No touchdowns in that game');
+          load();
+        })
+        .catch(function(e){ b.disabled = false; toast(e.message, true); });
     });
   });
   root.querySelectorAll('[data-price]').forEach(function(b){
