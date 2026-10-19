@@ -213,6 +213,107 @@ tr.me td{background:rgba(217,164,65,.07)}
 .fade{animation:fadeup .35s ease both}
 @keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .hide{display:none!important}
+
+/* ---------- trends ---------- */
+/* Player slots: validated on both felt surfaces (adjacent ΔE ≥ 8.4 CVD, ≥ 19.8 normal, all ≥ 3:1).
+   Lines are also end-labeled by name, so identity never rests on color alone. */
+:root{ --p0:#3987e5; --p1:#d95926; --p2:#199e70; --p3:#c98500;
+  --pos1:#1c5cab; --pos2:#256abf; --pos3:#6da7ec; --neg1:#8f3a3a; --neg2:#b04444; --neg3:#ec8a8a; --mid:#2c4236;
+  --grid:#1a3a29; --axis:#2f5641; --muted:#87a794 }
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--felt2);border:1px solid var(--line);color:var(--muted);border-radius:999px;
+  font-family:'Spline Sans Mono';font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;cursor:pointer}
+.chip.on{background:linear-gradient(180deg,var(--gold),var(--gold2));color:var(--felt);border-color:var(--gold2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 10px}
+.lg-item{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-family:'Barlow';font-weight:700;font-size:14px;cursor:pointer;padding:4px 0}
+.lg-item i,.tile i,.tr i,.heat td.nm i,.eg-nm i{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+.lg-item.on{color:var(--paper)}
+.lg-item em{font-style:normal;font-family:'Spline Sans Mono';font-size:9px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:4px 0 10px}
+.tile{background:var(--felt2);border:1px solid var(--line);border-radius:7px;padding:9px 10px;min-width:0}
+.tile .tk{font-family:'Spline Sans Mono';font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.tile .tv{display:flex;align-items:center;gap:6px;font-family:'Big Shoulders Display';font-weight:800;font-size:19px;letter-spacing:.04em;text-transform:uppercase;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .ts{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .ts b{font-family:'Spline Sans Mono';color:var(--gold)}
+.chartcard{background:var(--felt2);border:1px solid var(--line);border-radius:8px;padding:12px 12px 10px;margin:10px 0}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.ch-head h4{font-family:'Big Shoulders Display';font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase}
+.ch-sub{font-size:12px;color:var(--muted);line-height:1.35;margin-top:1px}
+.mini-seg{display:flex;background:var(--felt);border:1px solid var(--line);border-radius:6px;padding:3px;gap:2px;flex:none}
+.mini-seg.wide{margin:2px 0 8px}
+.mini-seg.wide button{flex:1}
+.mini-seg button{background:none;border:none;color:var(--muted);font-family:'Spline Sans Mono';font-weight:700;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:7px 9px;border-radius:4px;cursor:pointer}
+.mini-seg button.on{background:var(--gold);color:var(--felt)}
+.plot{position:relative;width:100%;touch-action:pan-y}
+.plot svg{display:block;overflow:visible}
+.g-line{stroke:var(--grid);stroke-width:1}
+.g-zero{stroke:var(--axis);stroke-width:1.5}
+.g-tick{font-family:'Spline Sans Mono';font-size:10px;fill:var(--muted)}
+.g-end{font-family:'Barlow';font-weight:700;font-size:12px;fill:var(--muted)}
+.g-end.on{fill:var(--paper)}
+.g-endv{font-family:'Spline Sans Mono';font-size:10.5px}
+.g-cross{stroke:var(--paper);stroke-opacity:.35;stroke-width:1}
+.tip{position:absolute;z-index:5;pointer-events:none;background:var(--paper);color:var(--ink);border-radius:6px;padding:8px 10px;
+  box-shadow:0 8px 22px rgba(0,0,0,.45);min-width:150px}
+.tip .tt{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:4px}
+.tip .tr{display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:7px;font-size:13px;line-height:1.55}
+.tip .tr.on span{font-weight:700}
+.tip .tr b{font-family:'Spline Sans Mono';font-size:12px}
+.tip .tr em{font-style:normal;font-family:'Spline Sans Mono';font-size:11px;color:var(--ink2)}
+.linkbtn{background:none;border:none;color:var(--gold);font-family:'Spline Sans Mono';font-size:11px;letter-spacing:.08em;cursor:pointer;padding:6px 0 0}
+.tblwrap{overflow-x:auto;margin-top:4px}
+table.mini th,table.mini td{padding:6px 6px;font-size:12.5px}
+table.heat{border-collapse:separate;border-spacing:3px;margin:0}
+table.heat th{font-family:'Spline Sans Mono';font-size:9.5px;letter-spacing:.1em;color:var(--muted);padding:2px 0;text-align:center;border:none}
+table.heat td{padding:0;border:none;font-size:13px}
+table.heat td.nm{display:flex;align-items:center;gap:6px;font-weight:700;padding:0 6px 0 0;height:30px;white-space:nowrap;color:var(--muted);position:sticky;left:0;z-index:1;background:var(--felt2)}
+table.heat th:first-child{position:sticky;left:0;z-index:1;background:var(--felt2)}
+.heatwrap{scrollbar-width:thin}
+table.heat tr.on td.nm{color:var(--paper)}
+table.heat .tot{font-family:'Spline Sans Mono';font-weight:700;font-size:11px;color:var(--gold);text-align:right;padding-left:6px;white-space:nowrap}
+.hc{display:flex;align-items:center;justify-content:center;min-width:36px;padding:0 4px;white-space:nowrap;height:30px;border-radius:4px;
+  font-family:'Spline Sans Mono';font-weight:700;font-size:11px;color:var(--paper);cursor:default}
+.hc.pos1{background:var(--pos1)}.hc.pos2{background:var(--pos2)}.hc.pos3{background:var(--pos3);color:var(--felt)}
+.hc.neg1{background:var(--neg1)}.hc.neg2{background:var(--neg2)}.hc.neg3{background:var(--neg3);color:var(--felt)}
+.hc.mid{background:var(--mid)}
+.hc.none{background:transparent;border:1px solid var(--line);color:#4f6e5d}
+.scale{display:flex;align-items:center;gap:3px;margin-top:9px;font-size:11px;color:var(--muted)}
+.scale i.hc{min-width:0;width:16px;height:10px;border-radius:2px}
+.scale span{margin:0 4px}
+.sp-group{margin:6px 0 10px}
+.sp-title{display:flex;justify-content:space-between;align-items:baseline;font-family:'Big Shoulders Display';font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.sp-title span{font-family:'Spline Sans Mono';font-size:10.5px;letter-spacing:.06em;color:var(--muted);text-transform:none}
+.sp-row{display:grid;grid-template-columns:54px 1fr 92px;align-items:center;gap:8px;padding:3px 0}
+.sp-nm{font-weight:700;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-row.on .sp-nm{color:var(--paper)}
+.sp-track{position:relative;height:14px;background:rgba(10,31,20,.7);border-radius:4px}
+.sp-bar{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
+.sp-row:not(.on) .sp-bar{opacity:.6}
+.sp-50{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--axis)}
+.sp-pool{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:var(--paper);border-radius:2px;box-shadow:0 0 0 2px var(--felt2)}
+.sp-v{font-family:'Spline Sans Mono';font-weight:700;font-size:12px;text-align:right;white-space:nowrap}
+.sp-v em{font-style:normal;font-size:10px;margin-left:3px}
+.sp-v em.up{color:#6fcf97}.sp-v em.down{color:#ec8a8a}
+.sp-v small{display:block;font-size:10px;font-weight:500;color:var(--muted)}
+.sp-key{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.sp-key .k-pool{display:inline-block;width:3px;height:12px;background:var(--paper);border-radius:2px}
+.sp-key .k-50{display:inline-block;width:1px;height:12px;background:var(--axis);margin-left:8px}
+.egg-sup{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);margin:2px 0 10px}
+.egg-sup b{color:var(--paper)}
+.egg-grid{display:grid;grid-template-columns:62px 1fr 1fr;gap:6px 10px;align-items:center}
+.eg-h{font-family:'Spline Sans Mono';font-size:9.5px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.eg-h b{font-weight:700}
+.k-hit{color:var(--gold)}.k-burn{color:#ec8a8a}
+.eg-nm{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:var(--muted)}
+.eg-nm.on{color:var(--paper)}
+.eg-cell{display:flex;align-items:center;gap:7px;min-width:0}
+.eg-track{flex:1;display:flex;gap:2px;height:12px}
+.eg-fill{display:block;height:100%;border-radius:3px}
+.eg-fill.hit{background:var(--gold)}.eg-fill.burn{background:#ec8a8a}.eg-fill.rest{background:rgba(244,237,220,.16)}
+.eg-v{font-family:'Spline Sans Mono';font-weight:700;font-size:11.5px;width:34px;text-align:right}
+.fineprint{color:var(--muted);font-size:11.5px;line-height:1.5;margin:6px 2px 0}
+@media (max-width:380px){ .tiles{grid-template-columns:1fr 1fr} .tile:last-child{grid-column:span 2} .hc{min-width:34px} }
 </style>
 </head>
 <body>
@@ -243,6 +344,7 @@ tr.me td{background:rgba(217,164,65,.07)}
     <div id="tab-picks"></div>
     <div id="tab-board" class="hide"></div>
     <div id="tab-standings" class="hide"></div>
+    <div id="tab-trends" class="hide"></div>
     <div id="tab-admin" class="hide"></div>
   </div>
 </div>
@@ -251,10 +353,185 @@ tr.me td{background:rgba(217,164,65,.07)}
   <button data-tab="picks" class="on">Picks</button>
   <button data-tab="board">The Board</button>
   <button data-tab="standings">Standings</button>
+  <button data-tab="trends">Trends</button>
   <button data-tab="admin" id="nav-admin" class="hide">Admin</button>
 </nav>
 <div id="toast"></div>
 
+<script>
+// Trends math, transpiled from the iOS app's src/trends.ts so both clients agree.
+var TR = (function(){ var exports = {}; var module = { exports: exports };
+"use strict";
+// The math behind the Trends charts. No imports on purpose: the website transpiles this
+// same file to plain JS, so the app and the site can never disagree about a number.
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SPLIT_PAIRS = exports.FILTERS = void 0;
+exports.matches = matches;
+exports.blank = blank;
+exports.add = add;
+exports.net = net;
+exports.pct = pct;
+exports.recText = recText;
+exports.signed = signed;
+exports.rosterOrder = rosterOrder;
+exports.playedWeeks = playedWeeks;
+exports.race = race;
+exports.weekLabel = weekLabel;
+exports.weekShort = weekShort;
+exports.grid = grid;
+exports.filterLabel = filterLabel;
+exports.splits = splits;
+exports.eggScore = eggScore;
+exports.FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'cfb', label: 'College' },
+    { key: 'nfl', label: 'NFL' },
+    { key: 'fav', label: 'Favorites' },
+    { key: 'dog', label: 'Underdogs' },
+    { key: 'home', label: 'Home' },
+    { key: 'away', label: 'Road' },
+];
+function matches(pk, key) {
+    switch (key) {
+        case 'all': return true;
+        case 'cfb': return pk.lg === 'cfb';
+        case 'nfl': return pk.lg === 'nfl';
+        case 'fav': return pk.fav === true;
+        case 'dog': return pk.fav === false;
+        case 'home': return pk.home;
+        case 'away': return !pk.home;
+    }
+    return false;
+}
+function blank() { return { w: 0, l: 0, p: 0 }; }
+function add(r, result) {
+    if (result === 'win')
+        r.w++;
+    else if (result === 'loss')
+        r.l++;
+    else
+        r.p++;
+}
+function net(r) { return r.w - r.l; }
+// Pushes don't count either way, same as the standings.
+function pct(r) { return r.w + r.l ? r.w / (r.w + r.l) : null; }
+function recText(r) { return `${r.w}-${r.l}${r.p ? `-${r.p}` : ''}`; }
+function signed(n, digits = 0) {
+    const v = Number(n.toFixed(digits));
+    return v > 0 ? `+${v.toFixed(digits)}` : v < 0 ? `−${Math.abs(v).toFixed(digits)}` : '0';
+}
+// Players keep one color all season: slot order follows the alphabetical roster, never
+// the current rank, so a filter can't repaint anyone.
+function rosterOrder(h) {
+    return [...h.players].sort((a, b) => a.name.localeCompare(b.name)).map((p, i) => (Object.assign(Object.assign({}, p), { slot: i })));
+}
+// Weeks with at least one settled pick (of the filtered kind), oldest first. A week where
+// nobody had an NFL pick simply isn't on the NFL chart.
+function playedWeeks(h, key = 'all') {
+    return [...new Set(h.picks.filter((p) => matches(p, key)).map((p) => p.w))].sort((a, b) => a - b);
+}
+// Running W-L by week, plus how far ahead of the rest of the field each player sits:
+// your net minus the average net of everyone else. Point 0 is the starting line.
+function race(h, key) {
+    const weeks = playedWeeks(h, key);
+    const roster = rosterOrder(h);
+    const cum = Object.fromEntries(roster.map((p) => [p.id, blank()]));
+    const series = roster.map((p) => ({
+        id: p.id, name: p.name, slot: p.slot,
+        points: [{ w: null, label: 'Start', rec: blank(), net: 0, ahead: 0 }],
+    }));
+    for (const wk of weeks) {
+        for (const pk of h.picks)
+            if (pk.w === wk && matches(pk, key) && cum[pk.p])
+                add(cum[pk.p], pk.r);
+        const nets = roster.map((p) => net(cum[p.id]));
+        const total = nets.reduce((a, b) => a + b, 0);
+        roster.forEach((p, i) => {
+            const others = roster.length > 1 ? (total - nets[i]) / (roster.length - 1) : 0;
+            series[i].points.push({
+                w: wk, label: weekLabel(h, wk), rec: Object.assign({}, cum[p.id]), net: nets[i],
+                ahead: Math.round((nets[i] - others) * 10) / 10,
+            });
+        });
+    }
+    return { weeks, series };
+}
+function weekLabel(h, wk) {
+    var _a, _b;
+    return (_b = (_a = h.weeks.find((w) => w.no === wk)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : `Week ${wk}`;
+}
+function weekShort(wk) { return `W${wk}`; }
+// One cell per player per week: that week's record under the filter, or null when the
+// player had no settled pick of that kind.
+function grid(h, key) {
+    const weeks = playedWeeks(h, key);
+    const rows = rosterOrder(h).map((p) => {
+        const total = blank();
+        const cells = weeks.map((wk) => {
+            const r = blank();
+            let any = false;
+            for (const pk of h.picks) {
+                if (pk.p !== p.id || pk.w !== wk || !matches(pk, key))
+                    continue;
+                add(r, pk.r);
+                add(total, pk.r);
+                any = true;
+            }
+            return any ? r : null;
+        });
+        return { id: p.id, name: p.name, slot: p.slot, cells, total };
+    });
+    return { weeks, rows };
+}
+exports.SPLIT_PAIRS = [
+    { title: 'League', keys: ['cfb', 'nfl'] },
+    { title: 'Fav / Dog', keys: ['fav', 'dog'] },
+    { title: 'Home / Road', keys: ['home', 'away'] },
+];
+function filterLabel(key) {
+    var _a, _b;
+    return (_b = (_a = exports.FILTERS.find((f) => f.key === key)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : key;
+}
+// Win rate per category, each player beside the whole pool's rate in that category.
+function splits(h) {
+    const roster = rosterOrder(h);
+    return exports.SPLIT_PAIRS.map((pair) => ({
+        title: pair.title,
+        groups: pair.keys.map((key) => {
+            const pool = blank();
+            const players = roster.map((p) => {
+                const r = blank();
+                for (const pk of h.picks)
+                    if (pk.p === p.id && matches(pk, key)) {
+                        add(r, pk.r);
+                        add(pool, pk.r);
+                    }
+                return { id: p.id, name: p.name, slot: p.slot, rec: r, pct: pct(r) };
+            });
+            return { key, label: filterLabel(key), pool, poolPct: pct(pool), players };
+        }),
+    }));
+}
+// 🍆: calls thrown and how often the flagged bet actually lost, and the other side —
+// how often you got flagged and whether the haters were right.
+function eggScore(h) {
+    return rosterOrder(h).map((p) => {
+        const thrown = h.eggs.filter((e) => e.by === p.id);
+        const got = h.eggs.filter((e) => e.on.includes(p.id));
+        const hits = thrown.filter((e) => e.r === 'loss').length;
+        const misses = thrown.filter((e) => e.r === 'win').length;
+        const burned = got.filter((e) => e.r === 'loss').length;
+        const survived = got.filter((e) => e.r === 'win').length;
+        return {
+            id: p.id, name: p.name, slot: p.slot,
+            thrown: thrown.length, hits, misses, hitRate: hits + misses ? hits / (hits + misses) : null,
+            flagged: got.length, burned, survived,
+        };
+    });
+}
+
+return exports; })();
+</script>
 <script>
 (function(){
 "use strict";
@@ -327,6 +604,7 @@ function load(){
     S.data = d;
     S.clockSkew = new Date(d.now).getTime() - Date.now();
     if (d.week) S.weekId = d.week.id;
+    if (TRS.hist) loadHistory(true);
     render();
   }).catch(function(e){
     if (String(e.message).indexOf('Not signed in') >= 0) { S.token=''; localStorage.removeItem('sp_token'); render(); }
@@ -345,12 +623,13 @@ function render(){
   el('nav-admin').classList.toggle('hide', !d.me.is_commissioner);
   el('userchip').textContent = d.me.name + ' ↩';
   renderWeekSel();
-  ['picks','board','standings','admin'].forEach(function(t){
+  ['picks','board','standings','trends','admin'].forEach(function(t){
     el('tab-' + t).classList.toggle('hide', S.tab !== t);
   });
   if (S.tab === 'picks') renderPicks();
   if (S.tab === 'board') renderBoard();
   if (S.tab === 'standings') renderStandings();
+  if (S.tab === 'trends') renderTrends();
   if (S.tab === 'admin') renderAdmin();
 }
 
@@ -714,6 +993,297 @@ function renderStandings(){
   }
   root.innerHTML = '<div class="fade">' + html + '</div>';
 }
+
+// ---------- trends ----------
+// Four charts over the season so far. The numbers come from TR (the same trends.ts the
+// iOS app ships); this half only draws them. Player colors follow the alphabetical
+// roster, so filtering never repaints anyone.
+var TRS = { hist: null, loading: false, filter: 'all', mode: 'ahead', focus: null, split: 0, table: false };
+
+function loadHistory(force){
+  if (TRS.loading || (TRS.hist && !force)) return;
+  TRS.loading = true;
+  api('/api/history').then(function(h){ TRS.hist = h; TRS.loading = false; if (S.tab === 'trends') renderTrends(); })
+    .catch(function(e){ TRS.loading = false; toast(e.message, true); });
+}
+
+function pColor(slot){ return 'var(--p' + (slot % 4) + ')'; }
+function fmtPct(x){ return x === null ? '—' : Math.round(x * 100) + '%'; }
+function niceStep(span){
+  var raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 0.0001))));
+  var n = raw / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+}
+
+function renderTrends(){
+  var root = el('tab-trends');
+  var h = TRS.hist;
+  if (!h) {
+    root.innerHTML = '<div class="empty"><span class="big">Pulling the tape</span>Loading the season…</div>';
+    loadHistory();
+    return;
+  }
+  if (!h.picks.length) {
+    root.innerHTML = '<div class="empty"><span class="big">No tape yet</span>Charts fill in once the first picks are graded.</div>';
+    return;
+  }
+  if (!TRS.focus) TRS.focus = S.data.me.id;
+  var roster = TR.rosterOrder(h);
+  var html = '<div class="fade">';
+
+  // filter row: applies to the race, the tiles and the grid
+  html += '<div class="sechead"><h3>Trends</h3><span class="count">' + h.season + '</span></div>'
+    + '<div class="chips" role="tablist" aria-label="Filter by category">';
+  TR.FILTERS.forEach(function(f){
+    html += '<button class="chip' + (TRS.filter === f.key ? ' on' : '') + '" data-tf="' + f.key + '" role="tab" aria-selected="' + (TRS.filter === f.key) + '">' + f.label + '</button>';
+  });
+  html += '</div>';
+
+  // legend doubles as the spotlight picker
+  html += '<div class="legend" aria-label="Spotlight a player">';
+  roster.forEach(function(p){
+    html += '<button class="lg-item' + (TRS.focus === p.id ? ' on' : '') + '" data-focus="' + p.id + '">'
+      + '<i style="background:' + pColor(p.slot) + '"></i>' + esc(p.name) + (p.id === S.data.me.id ? ' <em>you</em>' : '') + '</button>';
+  });
+  html += '</div>';
+
+  var race = TR.race(h, TRS.filter);
+  html += tilesHtml(h, race);
+
+  // 1 · the race
+  html += '<div class="chartcard"><div class="ch-head"><div><h4>The Race</h4><p class="ch-sub">'
+    + (TRS.mode === 'ahead' ? 'Games ahead of (or behind) the average of everyone else' : 'Running wins minus losses')
+    + '</p></div><div class="mini-seg">'
+    + '<button data-tm="ahead" class="' + (TRS.mode === 'ahead' ? 'on' : '') + '">vs field</button>'
+    + '<button data-tm="net" class="' + (TRS.mode === 'net' ? 'on' : '') + '">W−L</button></div></div>'
+    + '<div class="plot" id="race-plot"></div>'
+    + '<button class="linkbtn" data-ttable="1">' + (TRS.table ? 'Hide' : 'Show') + ' the numbers</button>'
+    + (TRS.table ? raceTable(race) : '') + '</div>';
+
+  // 2 · heat grid
+  html += gridHtml(h);
+
+  // 3 · splits
+  html += splitsChartHtml(h);
+
+  // 4 · eggplants
+  html += eggHtml(h);
+
+  html += '<p class="fineprint">Pushes never count for or against. Favorites and underdogs are which side of the spread you took; pick’em games sit out of that split.</p></div>';
+  root.innerHTML = html;
+  drawRace(race);
+  // newest weeks first: the grid opens scrolled to its right edge
+  var hw = el('heat-wrap'); if (hw) hw.scrollLeft = hw.scrollWidth;
+  wireTrends();
+}
+
+function tilesHtml(h, race){
+  // leader, hot hand (last three weeks), best single week, all under the current filter
+  var last = function(s){ return s.points[s.points.length - 1]; };
+  var leader = race.series.slice().sort(function(a, b){ return last(b).net - last(a).net; })[0];
+  var weeks = race.weeks;
+  var hot = null, best = null;
+  race.series.forEach(function(s){
+    var pts = s.points, n = pts.length - 1;
+    var from = pts[Math.max(0, n - 3)];
+    var run = last(s).net - from.net;
+    if (!hot || run > hot.v) hot = { s: s, v: run, n: Math.min(3, n) };
+    for (var i = 1; i < pts.length; i++) {
+      var wk = pts[i].net - pts[i - 1].net;
+      if (!best || wk > best.v) best = { s: s, v: wk, label: pts[i].label };
+    }
+  });
+  function tile(k, s, v, sub){
+    return '<div class="tile"><div class="tk">' + k + '</div><div class="tv"><i style="background:' + pColor(s.slot) + '"></i>' + esc(s.name) + '</div>'
+      + '<div class="ts"><b>' + v + '</b> ' + sub + '</div></div>';
+  }
+  if (!weeks.length) return '';
+  return '<div class="tiles">'
+    + tile('Leader', leader, TR.signed(last(leader).net), TR.recText(last(leader).rec))
+    + tile('Hot hand', hot.s, TR.signed(hot.v), 'last ' + hot.n + ' wk' + (hot.n === 1 ? '' : 's'))
+    + tile('Best week', best.s, TR.signed(best.v), esc(best.label))
+    + '</div>';
+}
+
+function raceTable(race){
+  var key = TRS.mode === 'ahead' ? 'ahead' : 'net';
+  var html = '<div class="tblwrap"><table class="mini"><tr><th>Player</th>';
+  race.series[0].points.slice(1).forEach(function(p){ html += '<th class="r">' + TR.weekShort(p.w) + '</th>'; });
+  html += '</tr>';
+  race.series.forEach(function(s){
+    html += '<tr><td class="nm">' + esc(s.name) + '</td>';
+    s.points.slice(1).forEach(function(p){ html += '<td class="r mono">' + TR.signed(p[key], key === 'ahead' ? 1 : 0) + '</td>'; });
+    html += '</tr>';
+  });
+  return html + '</table></div>';
+}
+
+function drawRace(race){
+  var host = el('race-plot');
+  if (!host) return;
+  var key = TRS.mode === 'ahead' ? 'ahead' : 'net';
+  var W = Math.max(280, host.clientWidth), H = 236;
+  var m = { l: 30, r: 74, t: 12, b: 26 };
+  var n = race.series[0].points.length;
+  var vals = [0];
+  race.series.forEach(function(s){ s.points.forEach(function(p){ vals.push(p[key]); }); });
+  var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if (hi - lo < 4) { hi += 2; lo -= 2; }
+  var step = niceStep(hi - lo);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  var x = function(i){ return m.l + (n === 1 ? 0 : i * (W - m.l - m.r) / (n - 1)); };
+  var y = function(v){ return m.t + (hi - v) * (H - m.t - m.b) / (hi - lo); };
+
+  var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Season race chart">';
+  for (var v = lo; v <= hi + 1e-9; v += step) {
+    var yy = y(v);
+    svg += '<line x1="' + m.l + '" x2="' + (W - m.r + 6) + '" y1="' + yy + '" y2="' + yy + '" class="' + (Math.abs(v) < 1e-9 ? 'g-zero' : 'g-line') + '"/>'
+      + '<text x="' + (m.l - 7) + '" y="' + (yy + 3.5) + '" class="g-tick" text-anchor="end">' + TR.signed(v) + '</text>';
+  }
+  race.series[0].points.forEach(function(p, i){
+    if (n > 9 && i % 2 && i !== n - 1) return;
+    svg += '<text x="' + x(i) + '" y="' + (H - 8) + '" class="g-tick" text-anchor="middle">' + (p.w === null ? 'Start' : TR.weekShort(p.w)) + '</text>';
+  });
+  // spotlight last, so it draws on top
+  var order = race.series.slice().sort(function(a, b){ return (a.id === TRS.focus) - (b.id === TRS.focus); });
+  order.forEach(function(s){
+    var on = s.id === TRS.focus;
+    var d = s.points.map(function(p, i){ return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[key]).toFixed(1); }).join(' ');
+    svg += '<path d="' + d + '" fill="none" stroke="' + pColor(s.slot) + '" stroke-width="' + (on ? 3 : 2) + '" stroke-linejoin="round" stroke-linecap="round" opacity="' + (on ? 1 : 0.45) + '"/>';
+    var lp = s.points[n - 1];
+    svg += '<circle cx="' + x(n - 1) + '" cy="' + y(lp[key]) + '" r="' + (on ? 4.5 : 3.5) + '" fill="' + pColor(s.slot) + '" stroke="var(--felt2)" stroke-width="2" opacity="' + (on ? 1 : 0.7) + '"/>';
+  });
+  // end labels, nudged apart so names never collide
+  var labels = race.series.map(function(s){ var lp = s.points[n - 1]; return { s: s, y: y(lp[key]), v: lp[key] }; })
+    .sort(function(a, b){ return a.y - b.y; });
+  for (var i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 14) labels[i].y = labels[i - 1].y + 14;
+  var over = labels.length ? labels[labels.length - 1].y - (H - m.b) : 0;
+  if (over > 0) labels.forEach(function(l){ l.y -= over; });
+  labels.forEach(function(l){
+    var on = l.s.id === TRS.focus;
+    svg += '<text x="' + (W - m.r + 12) + '" y="' + (l.y + 4) + '" class="g-end' + (on ? ' on' : '') + '">' + esc(l.s.name) + ' <tspan class="g-endv">' + TR.signed(l.v, key === 'ahead' ? 1 : 0) + '</tspan></text>';
+  });
+  svg += '<line id="race-x" x1="0" x2="0" y1="' + m.t + '" y2="' + (H - m.b) + '" class="g-cross" visibility="hidden"/>'
+    + '<g id="race-dots"></g>'
+    + '<rect x="' + (m.l - 10) + '" y="0" width="' + (W - m.l - m.r + 20) + '" height="' + H + '" fill="transparent" id="race-hit"/>'
+    + '</svg><div class="tip" id="race-tip" hidden></div>';
+  host.innerHTML = svg;
+
+  var hit = el('race-hit'), tip = el('race-tip'), cross = el('race-x'), dots = el('race-dots');
+  function show(evt){
+    var box = host.getBoundingClientRect();
+    var px = evt.clientX - box.left;
+    var i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / ((W - m.l - m.r) / Math.max(1, n - 1)))));
+    var xx = x(i);
+    cross.setAttribute('x1', xx); cross.setAttribute('x2', xx); cross.setAttribute('visibility', 'visible');
+    var rows = race.series.map(function(s){ return { s: s, p: s.points[i] }; }).sort(function(a, b){ return b.p[key] - a.p[key]; });
+    dots.innerHTML = rows.map(function(r){
+      return '<circle cx="' + xx + '" cy="' + y(r.p[key]) + '" r="4.5" fill="' + pColor(r.s.slot) + '" stroke="var(--felt2)" stroke-width="2"/>';
+    }).join('');
+    tip.innerHTML = '<div class="tt">' + esc(race.series[0].points[i].label) + '</div>' + rows.map(function(r){
+      return '<div class="tr' + (r.s.id === TRS.focus ? ' on' : '') + '"><i style="background:' + pColor(r.s.slot) + '"></i><span>' + esc(r.s.name) + '</span><b>'
+        + TR.signed(r.p[key], key === 'ahead' ? 1 : 0) + '</b><em>' + TR.recText(r.p.rec) + '</em></div>';
+    }).join('');
+    tip.hidden = false;
+    var tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(W - tw, xx + (xx > W / 2 ? -tw - 12 : 12))) + 'px';
+    tip.style.top = '6px';
+  }
+  function hide(){ tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dots.innerHTML = ''; }
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerdown', show);
+  hit.addEventListener('pointerleave', function(e){ if (e.pointerType === 'mouse') hide(); });
+}
+
+function cellClass(r){
+  if (!r) return 'hc none';
+  var v = TR.net(r), a = Math.abs(v);
+  if (!v) return 'hc mid';
+  return 'hc ' + (v > 0 ? 'pos' : 'neg') + (a >= 4 ? 3 : a >= 2 ? 2 : 1);
+}
+function gridHtml(h){
+  var g = TR.grid(h, TRS.filter);
+  var html = '<div class="chartcard"><div class="ch-head"><div><h4>Week by Week</h4><p class="ch-sub">Each week’s record' + (TRS.filter === 'all' ? '' : ' · ' + esc(TR.filterLabel(TRS.filter)) + ' only') + '</p></div></div>'
+    + '<div class="tblwrap heatwrap" id="heat-wrap"><table class="heat"><tr><th></th>';
+  g.weeks.forEach(function(wk){ html += '<th>' + TR.weekShort(wk) + '</th>'; });
+  html += '<th class="tot">Total</th></tr>';
+  g.rows.forEach(function(r){
+    html += '<tr class="' + (r.id === TRS.focus ? 'on' : '') + '"><td class="nm"><i style="background:' + pColor(r.slot) + '"></i>' + esc(r.name) + '</td>';
+    r.cells.forEach(function(c, i){
+      var t = c ? esc(r.name) + ' · ' + esc(TR.weekLabel(h, g.weeks[i])) + ' · ' + TR.recText(c) + ' (' + TR.signed(TR.net(c)) + ')' : esc(r.name) + ' · no picks of this kind';
+      html += '<td><span class="' + cellClass(c) + '" title="' + t + '" aria-label="' + t + '">' + (c ? TR.recText(c) : '·') + '</span></td>';
+    });
+    html += '<td class="tot mono">' + TR.recText(r.total) + '</td></tr>';
+  });
+  html += '</table></div><div class="scale"><span>Losing week</span><i class="hc neg3"></i><i class="hc neg2"></i><i class="hc neg1"></i><i class="hc mid"></i><i class="hc pos1"></i><i class="hc pos2"></i><i class="hc pos3"></i><span>Winning week</span></div></div>';
+  return html;
+}
+
+function splitsChartHtml(h){
+  var all = TR.splits(h);
+  var pair = all[TRS.split] || all[0];
+  var html = '<div class="chartcard"><div class="ch-head"><div><h4>Category Splits</h4><p class="ch-sub">Win rate, each player against the pool</p></div></div>'
+    + '<div class="mini-seg wide">';
+  all.forEach(function(p, i){ html += '<button data-tsplit="' + i + '" class="' + (i === TRS.split ? 'on' : '') + '">' + esc(p.title) + '</button>'; });
+  html += '</div>';
+  pair.groups.forEach(function(gr){
+    html += '<div class="sp-group"><div class="sp-title">' + esc(gr.label) + '<span>Pool ' + fmtPct(gr.poolPct) + ' · ' + TR.recText(gr.pool) + '</span></div>';
+    gr.players.forEach(function(p){
+      var w = p.pct === null ? 0 : p.pct * 100;
+      var diff = p.pct === null || gr.poolPct === null ? '' : ' <em class="' + (p.pct >= gr.poolPct ? 'up' : 'down') + '">' + TR.signed(Math.round((p.pct - gr.poolPct) * 100)) + '</em>';
+      html += '<div class="sp-row' + (p.id === TRS.focus ? ' on' : '') + '" title="' + esc(p.name) + ' · ' + esc(gr.label) + ' · ' + TR.recText(p.rec) + '">'
+        + '<span class="sp-nm">' + esc(p.name) + '</span>'
+        + '<span class="sp-track"><span class="sp-bar" style="width:' + w + '%;background:' + pColor(p.slot) + '"></span>'
+        + '<span class="sp-50"></span>'
+        + (gr.poolPct === null ? '' : '<span class="sp-pool" style="left:' + (gr.poolPct * 100) + '%"></span>') + '</span>'
+        + '<span class="sp-v">' + fmtPct(p.pct) + diff + '<small>' + TR.recText(p.rec) + '</small></span></div>';
+    });
+    html += '</div>';
+  });
+  html += '<div class="sp-key"><span class="k-pool"></span> pool rate <span class="k-50"></span> 50%</div></div>';
+  return html;
+}
+
+// only non-empty segments, so a zero never leaves a stray gap at the start of a bar
+function segs(parts){
+  return parts.filter(function(p){ return p[1] > 0; }).map(function(p){ return '<span class="eg-fill ' + p[0] + '" style="width:' + (100 * p[1]) + '%"></span>'; }).join('');
+}
+function eggHtml(h){
+  var rows = TR.eggScore(h);
+  if (!rows.some(function(r){ return r.thrown || r.flagged; })) return '';
+  var maxT = Math.max.apply(null, rows.map(function(r){ return r.thrown; }).concat([1]));
+  var maxF = Math.max.apply(null, rows.map(function(r){ return r.flagged; }).concat([1]));
+  var sharp = rows.filter(function(r){ return r.hitRate !== null; }).sort(function(a, b){ return b.hitRate - a.hitRate || b.hits - a.hits; })[0];
+  var hated = rows.slice().sort(function(a, b){ return b.flagged - a.flagged; })[0];
+  var html = '<div class="chartcard"><div class="ch-head"><div><h4>🍆 Scorecard</h4><p class="ch-sub">Calls that landed, and who keeps getting flagged</p></div></div>'
+    + '<div class="egg-sup">' + (sharp ? '<span>Sharpest eye: <b>' + esc(sharp.name) + '</b> ' + fmtPct(sharp.hitRate) + '</span>' : '')
+    + '<span>Most flagged: <b>' + esc(hated.name) + '</b> ×' + hated.flagged + '</span></div>'
+    + '<div class="egg-grid"><div class="eg-h"></div><div class="eg-h">Calls · <b class="k-hit">landed</b></div><div class="eg-h">Flagged · <b class="k-burn">it lost</b></div>';
+  rows.forEach(function(r){
+    html += '<div class="eg-nm' + (r.id === TRS.focus ? ' on' : '') + '"><i style="background:' + pColor(r.slot) + '"></i>' + esc(r.name) + '</div>'
+      + '<div class="eg-cell" title="' + esc(r.name) + ': ' + r.thrown + ' calls, ' + r.hits + ' landed, ' + r.misses + ' missed">'
+      + '<span class="eg-track">' + segs([['hit', r.hits / maxT], ['rest', (r.thrown - r.hits) / maxT]]) + '</span>'
+      + '<span class="eg-v">' + r.hits + '/' + r.thrown + '</span></div>'
+      + '<div class="eg-cell" title="' + esc(r.name) + ': flagged ' + r.flagged + ' times, lost ' + r.burned + ', survived ' + r.survived + '">'
+      + '<span class="eg-track">' + segs([['burn', r.burned / maxF], ['rest', (r.flagged - r.burned) / maxF]]) + '</span>'
+      + '<span class="eg-v">' + r.burned + '/' + r.flagged + '</span></div>';
+  });
+  return html + '</div></div>';
+}
+
+function wireTrends(){
+  var root = el('tab-trends');
+  root.querySelectorAll('[data-tf]').forEach(function(b){ b.addEventListener('click', function(){ TRS.filter = b.getAttribute('data-tf'); renderTrends(); }); });
+  root.querySelectorAll('[data-focus]').forEach(function(b){ b.addEventListener('click', function(){ TRS.focus = b.getAttribute('data-focus'); renderTrends(); }); });
+  root.querySelectorAll('[data-tm]').forEach(function(b){ b.addEventListener('click', function(){ TRS.mode = b.getAttribute('data-tm'); renderTrends(); }); });
+  root.querySelectorAll('[data-tsplit]').forEach(function(b){ b.addEventListener('click', function(){ TRS.split = Number(b.getAttribute('data-tsplit')); renderTrends(); }); });
+  root.querySelectorAll('[data-ttable]').forEach(function(b){ b.addEventListener('click', function(){ TRS.table = !TRS.table; renderTrends(); }); });
+}
+var trendsResize;
+window.addEventListener('resize', function(){
+  clearTimeout(trendsResize);
+  trendsResize = setTimeout(function(){ if (S.tab === 'trends' && TRS.hist) drawRace(TR.race(TRS.hist, TRS.filter)); }, 120);
+});
 
 function renderAdmin(){
   var d = S.data, root = el('tab-admin'), w = d.week;
