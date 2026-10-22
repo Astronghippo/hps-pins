@@ -1312,8 +1312,8 @@ function renderAdmin(){
     + '<div><label>Week #</label><input id="nw-no" type="number" value="' + (d.weeks.length ? (Math.max.apply(null, d.weeks.filter(function(x){return x.season===(w?w.season:new Date().getFullYear());}).map(function(x){return x.week_no;}).concat([0])) + 1) : 1) + '"></div></div>'
     + '<div class="grid2"><div><label>Slot 1 sport</label>' + sportSelect('nw-cfbs', 'cfb', null) + '</div>'
     + '<div><label>Slot 2 sport</label>' + sportSelect('nw-nfls', 'nfl', null) + '</div></div>'
-    + '<div class="grid2"><div><label>Slot 1 lock</label><input id="nw-cfb" type="datetime-local" value="' + toLocalInput(nextDow(6, 10)) + '"></div>'
-    + '<div><label>Slot 2 lock</label><input id="nw-nfl" type="datetime-local" value="' + toLocalInput(nextDow(0, 11)) + '"></div></div>'
+    + '<div class="grid2"><div><label>Slot 1 lock</label><input id="nw-cfb" type="datetime-local" value="' + toLocalInput(nextCentral(6, 10)) + '"></div>'
+    + '<div><label>Slot 2 lock</label><input id="nw-nfl" type="datetime-local" value="' + toLocalInput(nextCentral(6, 10)) + '"></div></div>'
     + '<div class="grid2"><div><label>Slot 1 picks required</label><input id="nw-cfbn" type="number" min="0" value="3"></div>'
     + '<div><label>Slot 2 picks required</label><input id="nw-nfln" type="number" min="0" value="3"></div></div>'
     + '<div class="btnrow"><button class="btn small" id="nw-create">Create week</button></div></div>';
@@ -1387,10 +1387,21 @@ function renderAdmin(){
   });
 }
 
-function nextDow(dow, hour){
-  var d = new Date(); d.setHours(hour, 0, 0, 0);
-  while (d.getDay() !== dow || d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
-  return d.toISOString();
+// The pool locks on Central time (10am Saturday in Chicago), whatever timezone the
+// commissioner's browser is in, and it follows Chicago across daylight saving.
+function nextCentral(dow, hour){
+  var fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23', weekday: 'short' });
+  var DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  function parts(t){ var o = {}; fmt.formatToParts(new Date(t)).forEach(function(p){ o[p.type] = p.value; }); return o; }
+  for (var i = 0; i < 9; i++) {
+    var p = parts(Date.now() + i * 86400000);
+    if (DOW[p.weekday] !== dow) continue;
+    for (var off = 5; off <= 6; off++) {   // CDT is UTC-5, CST is UTC-6
+      var t = Date.UTC(+p.year, +p.month - 1, +p.day, hour + off);
+      if (+parts(t).hour === hour && t > Date.now()) return new Date(t).toISOString();
+    }
+  }
+  return new Date(Date.now() + 7 * 86400000).toISOString();
 }
 
 // ---------- events ----------
